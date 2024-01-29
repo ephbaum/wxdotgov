@@ -1,3 +1,22 @@
+/** 
+ * wxdotgov
+ * 
+ * a program that takes a US postal code or a city name and, optionally, a state code and outputs the location's weather
+ * if no arguments are passed, print a message and exit
+ * the program should accept a US postal code or a city name and, optionally, a state code 
+ * if the input is not valid, print a message and exit
+ * if the input is valid, get the latitude and longitude of the location from nomatim.openstreetmap.org
+ * use the latitude and longitude to get fetch the weather office and grid points from api.weather.gov
+ * use the weather office and grid points to get the weather report and output from api.weather.gov
+ * 
+ * Examples:
+ * 
+ * $ wxdotgov 12345
+ * $ wxdotgov 12345-6789
+ * $ wxdotgov "New York"
+ * $ wxdotgov "Seattle, WA"
+ */
+
 use std::env;
 use regex::Regex;
 
@@ -10,13 +29,6 @@ mod tests {
     mod integration_tests;
 }
 
-// a program that takes a US postal code or a city name and, optionally, a state code and outputs the location's weather
-// if no arguments are passed, print a message and exit
-// the program should accept a US postal code or a city name and, optionally, a state code 
-// if the input is not valid, print a message and exit
-// if the input is valid, get the latitude and longitude of the location from nomatim.openstreetmap.org
-// use the latitude and longitude to get fetch the weather office and grid points from api.weather.gov
-// use the weather office and grid points to get the weather report and output from api.weather.gov
 
 #[derive(Debug, PartialEq)]
 enum InputType {
