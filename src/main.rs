@@ -1,6 +1,10 @@
 use std::{env, process::exit};
 use regex::Regex;
 
+use crate::nomatim::get_lat_lon;
+
+mod nomatim;
+
 #[cfg(test)]
 mod tests {
     mod integration_tests;
@@ -21,7 +25,8 @@ enum InputType {
     CityState(String, String),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args: Vec<String> = env::args().collect();
     let input = get_args(args);
 
@@ -29,19 +34,70 @@ fn main() {
         Some(InputType::PostalCode(code)) => {
             println!("Got a postal code: {}", code);
             // handle postal code
+            // use nomatim to get lat/lon
+            let result = get_lat_lon(&input, None).await;
+
+            match result {
+                Ok(response) => {
+                    println!("Got a response: {:?}", response);
+                }
+                Err(e) => {
+                    println!("Got an error: {:?}", e);
+                }
+            }
+
+            // use lat/lon to get weather office and grid points
         }
         Some(InputType::ExtendedPostalCode(code, extension)) => {
             println!("Got an extended postal code: {}-{}", code, extension);
             // handle extended postal code
+            // use nomatim to get lat/lon
+            let result = get_lat_lon(&input, None).await;
+
+            match result {
+                Ok(response) => {
+                    println!("Got a response: {:?}", response);
+                }
+                Err(e) => {
+                    println!("Got an error: {:?}", e);
+                }
+            }
+
+            // use lat/lon to get weather office and grid points
         }
         Some(InputType::CityName(city)) => {
             println!("Got a city name: {}", city);
-            // handle city name
+            // handle city
+            // use nomatim to get lat/lon
+            let result = get_lat_lon(&input, None).await;
+
+            match result {
+                Ok(response) => {
+                    println!("Got a response: {:?}", response);
+                }
+                Err(e) => {
+                    println!("Got an error: {:?}", e);
+                }
+            }
+
+            // use lat/lon to get weather office and grid points
         }
         Some(InputType::CityState(city, state)) => {
             println!("Got a city and state: {}, {}", city, state);
             // handle city and state
-        
+            // use nomatim to get lat/lon
+            let result = get_lat_lon(&input, None).await;
+
+            match result {
+                Ok(response) => {
+                    println!("Got a response: {:?}", response);
+                }
+                Err(e) => {
+                    println!("Got an error: {:?}", e);
+                }
+            }
+
+            // use lat/lon to get weather office and grid points
         }
         None => {
             exit_with_message("Invalid input", 1);
