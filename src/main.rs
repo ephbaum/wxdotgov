@@ -18,6 +18,7 @@ mod tests {
 // use the latitude and longitude to get fetch the weather office and grid points from api.weather.gov
 // use the weather office and grid points to get the weather report and output from api.weather.gov
 
+#[derive(Debug, PartialEq)]
 enum InputType {
     PostalCode(String),
     ExtendedPostalCode(String, String),
@@ -25,6 +26,7 @@ enum InputType {
     CityWithState(String, String),
 }
 
+#[derive(Debug)]
 pub enum LocationInput {
     PostalCode(String),
     PostalCodePlusFour(String, String),

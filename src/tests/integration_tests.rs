@@ -1,83 +1,68 @@
 #[cfg(test)]
 mod tests {
-    use crate::{get_args, extract_input, InputType};
-
-    #[test]
-    fn test_get_args() {
-        let args = vec![
-            "program_name".to_string(), // This would be the name of the program
-            "12345".to_string(),
-        ];
-        let input = get_args(args);
-        assert_eq!(input, "12345");
-    }
+    use crate::{extract_input, InputType};
 
     #[test]
     fn test_extract_input_postal_code() {
         let input = "12345";
-        match extract_input(input) {
-            Some(InputType::PostalCode(code)) => assert_eq!(code, "12345"),
-            _ => panic!("Expected PostalCode"),
-        }
+        let expected = Some(InputType::PostalCode(input.to_string()));
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
     fn test_extract_input_extended_postal_code() {
         let input = "12345-6789";
-        match extract_input(input) {
-            Some(InputType::ExtendedPostalCode(code, extension)) => {
-                assert_eq!(code, "12345");
-                assert_eq!(extension, "6789");
-            }
-            _ => panic!("Expected ExtendedPostalCode"),
-        }
+        let expected = Some(InputType::ExtendedPostalCode("12345".to_string(), "6789".to_string()));
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
     fn test_extract_input_city_name() {
         let input = "New York";
-        match extract_input(input) {
-            Some(InputType::CityName(city)) => assert_eq!(city, "New York"),
-            _ => panic!("Expected CityName"),
-        }
+        let expected = Some(InputType::City(input.to_string()));
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
     fn test_extract_input_city_state() {
-        let input = "New York, NY";
-        match extract_input(input) {
-            Some(InputType::CityState(city, state)) => {
-                assert_eq!(city, "New York");
-                assert_eq!(state, "NY");
-            }
-            _ => panic!("Expected CityState"),
-        }
+        let input = "Seattle, WA";
+        let expected = Some(InputType::CityWithState("Seattle".to_string(), "WA".to_string()));
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
-    fn test_extract_input_none() {
+    fn test_extract_input_invalid_input() {
         let input = "---";
-        match extract_input(input) {
-            None => (),
-            _ => panic!("Expected None"),
-        }
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
-    fn test_extract_input_six_digit_postal_code() {
+    fn test_extract_input_postal_code_too_long() {
         let input = "123456";
-        match extract_input(input) {
-            None => (),
-            _ => panic!("Expected None"),
-        }
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
     }
 
     #[test]
-    fn test_extract_input_five_digit_postal_code_plus_more() {
+    fn test_extract_input_postal_code_plus_four_too_long() {
         let input = "12345-67890";
-        match extract_input(input) {
-            None => (),
-            _ => panic!("Expected None"),
-        }
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
     }
+
+    #[test]
+    fn test_extract_input_postal_code_too_short() {
+        let input = "1234";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_postal_code_plus_four_too_short() {
+        let input = "12345-678";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
 }
