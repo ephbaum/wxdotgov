@@ -20,9 +20,12 @@
 use std::env;
 use regex::Regex;
 
-use crate::nomatim::get_lat_lon;
 
 mod nomatim;
+mod weatherdotgov;
+
+use crate::nomatim::get_lat_lon;
+use crate::weatherdotgov::{get_weather_forecast, get_weather_point};
 
 #[cfg(test)]
 mod tests {
@@ -77,13 +80,33 @@ async fn main() {
     match result {
         Ok(response) => {
             println!("Got a response: {:?}", response);
+            // Assuming the response is a struct with lat and lon fields
+            let weather_point = get_weather_point(&response.lat, &response.lon).await;
+            match weather_point {
+                Ok(wp) => {
+                    let forecast = get_weather_forecast(wp).await;
+                    match forecast {
+                        Ok(f) => {
+                            println!("Got a forecast: {}", f);
+                        }
+                        Err(e) => {
+                            println!("Failed to get forecast: {:?}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("Failed to get weather point: {:?}", e);
+                }
+            }
         }
         Err(e) => {
             println!("Got an error: {:?}", e);
         }
     }
 
-    // use lat/lon to get weather office and grid points
+    // use lat/lon with weatherdotgov module to get forecast
+
+
 }
 
 fn get_args(args: Vec<String>) -> String {
