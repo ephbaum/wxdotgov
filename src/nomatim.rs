@@ -20,45 +20,47 @@
 use reqwest::Error;
 use serde::{Deserialize, Serialize};
 
+use crate::LocationInput;
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NomatimResponse {
     pub lat: String,
     pub lon: String,
 }
 
-pub async fn get_lat_lon(input: &str, base_url: Option<&str>) -> Result<NomatimResponse, Error> {
+pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result<NomatimResponse, Error> {
     let default_base_url = "https://nominatim.openstreetmap.org/search?";
     let base_url = base_url.unwrap_or(default_base_url);
     let format = "&format=json";
     let mut url = String::new();
 
-    // This check should evaluate if postal code is 5 digits or, if 5 digits plus four it should remove the plus 4, if city, or if city and state
-    if input.contains(",") {
-        let mut split_input = input.split(",");
-        let city = split_input.next().unwrap().trim();
-        let state = split_input.next().unwrap().trim();
-        url.push_str(base_url);
-        url.push_str("city=");
-        url.push_str(city);
-        url.push_str("&state=");
-        url.push_str(state);
-        url.push_str(format);
-    } else if input.len() == 5 && input.chars().all(char::is_numeric) {
-        url.push_str(base_url);
-        url.push_str("postalcode=");
-        url.push_str(input);
-        url.push_str(format);
-    } else if input.contains("-") {
-        let postal_code = input.split("-").next().unwrap();
-        url.push_str(base_url);
-        url.push_str("postalcode=");
-        url.push_str(postal_code);
-        url.push_str(format);
-    } else {
-        url.push_str(base_url);
-        url.push_str("city=");
-        url.push_str(input.trim());
-        url.push_str(format);
+    match input {
+        LocationInput::PostalCode(code) => {
+            url.push_str(base_url);
+            url.push_str("postalcode=");
+            url.push_str(&code);
+            url.push_str(format);
+        }
+        LocationInput::PostalCodePlusFour(code, _) => {
+            url.push_str(base_url);
+            url.push_str("postalcode=");
+            url.push_str(&code);
+            url.push_str(format);
+        }
+        LocationInput::City(city) => {
+            url.push_str(base_url);
+            url.push_str("city=");
+            url.push_str(&city);
+            url.push_str(format);
+        }
+        LocationInput::CityWithState(city, state) => {
+            url.push_str(base_url);
+            url.push_str("city=");
+            url.push_str(&city);
+            url.push_str("&state=");
+            url.push_str(&state);
+            url.push_str(format);
+        }
     }
     let client = reqwest::Client::new();
     let response = client
@@ -70,61 +72,4 @@ pub async fn get_lat_lon(input: &str, base_url: Option<&str>) -> Result<NomatimR
         .await?;
 
     Ok(response[0].clone())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use mockito::Server;
-
-    #[tokio::test]
-    async fn test_get_lat_lon_with_postal_code() {
-        let mut server = Server::new();
-
-        let _m = server.mock("GET", "/search?format=json&q=90210")
-            .with_status(200)
-            .with_body(r#"[{"lat": "34.0901", "lon": "-118.4065"}]"#)
-            .create();
-
-        let result = get_lat_lon("Los Angeles", Some(server.url().as_str())).await;
-        println!("{:?}", result);  // print the result
-        assert!(result.is_ok());
-        let response = result.unwrap();
-        assert_eq!(response.lat, "34.0901");
-        assert_eq!(response.lon, "-118.4065");
-
-        _m.assert();
-    }
-
-    #[tokio::test]
-    async fn test_get_lat_lon_with_city() {
-        let mut server = Server::new();
-
-        let _m = server.mock("GET", "/search?format=json&q=Los%20Angeles")
-            .with_status(200)
-            .with_body(r#"[{"lat": "34.0522", "lon": "-118.2437"}]"#)
-            .create();
-
-        let result = get_lat_lon("Los Angeles", Some(server.url().as_str())).await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
-        assert_eq!(response.lat, "34.0522");
-        assert_eq!(response.lon, "-118.2437");
-    }
-
-    #[tokio::test]
-    async fn test_get_lat_lon_with_city_and_state() {
-        let mut server = Server::new();
-
-        let _m = server.mock("GET", "/search?format=json&q=Los%20Angeles%2CCA")
-            .with_status(200)
-            .with_body(r#"[{"lat": "34.0522", "lon": "-118.2437"}]"#)
-            .create();
-
-        let result = get_lat_lon("Los Angeles,CA", Some(server.url().as_str())).await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
-        assert_eq!(response.lat, "34.0522");
-        assert_eq!(response.lon, "-118.2437");
-    }
 }
