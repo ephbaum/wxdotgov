@@ -65,4 +65,45 @@ mod tests {
         assert_eq!(extract_input(input), expected);
     }
 
+    #[test]
+    fn test_extract_input_invalid_city_name() {
+        let input = "New York123";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_invalid_state_code() {
+        let input = "Seattle, WAA";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_postal_code() {
+        let input = "00000";
+        let expected = Some(InputType::PostalCode(input.to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_extended_postal_code() {
+        let input = "00000-0000";
+        let expected = Some(InputType::ExtendedPostalCode("00000".to_string(), "0000".to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_city_name() {
+        let input = "A";
+        let expected = Some(InputType::City(input.to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_city_with_state() {
+        let input = "A, AA";
+        let expected = Some(InputType::CityWithState("A".to_string(), "AA".to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
 }
