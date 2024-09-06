@@ -131,12 +131,12 @@ use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct WeatherPoint {
-    properties: Properties,
+    pub properties: Properties,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct Properties {
-    forecast: String,
+pub struct Properties {
+    pub forecast: String,
     // grid_id: String,
     // grid_x: i32,
     // grid_y: i32,

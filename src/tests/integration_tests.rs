@@ -4,7 +4,7 @@ mod tests {
     use crate::nomatim::get_lat_lon;
     use crate::weatherdotgov::{get_weather_point, get_weather_forecast};
     use crate::main;
-    use mockito::{mock, Matcher};
+    use mockito::{mock, Matcher, server_url};
 
     #[test]
     fn test_extract_input_postal_code() {
@@ -80,7 +80,7 @@ mod tests {
             .with_body(r#"[{"lat": "47.5619", "lon": "-122.625"}]"#)
             .create();
 
-        let result = get_lat_lon(crate::LocationInput::PostalCode("12345".to_string()), Some(&mockito::server_url())).await;
+        let result = get_lat_lon(crate::LocationInput::PostalCode("12345".to_string()), Some(&server_url())).await;
         assert!(result.is_ok());
         let response = result.unwrap();
         assert_eq!(response.lat, "47.5619");
@@ -141,7 +141,7 @@ mod tests {
             .create();
 
         let args = vec!["wxdotgov".to_string(), "12345".to_string()];
-        let result = main().await;
+        let result = main();
         assert!(result.is_ok());
     }
 }
