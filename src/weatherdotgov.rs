@@ -127,7 +127,6 @@
  * 
  */
 
-use reqwest::Error;
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
