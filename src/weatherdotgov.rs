@@ -191,3 +191,25 @@ pub async fn get_weather_forecast(weather_point: WeatherPoint) -> Result<String,
     let forecast: String = response.text().await.map_err(MyError::Reqwest)?;
     Ok(forecast)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_get_weather_point() {
+        let latitude = "47.5619".to_string();
+        let longitude = "-122.625".to_string();
+        let result = get_weather_point(&latitude, &longitude).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_weather_forecast() {
+        let latitude = "47.5619".to_string();
+        let longitude = "-122.625".to_string();
+        let weather_point = get_weather_point(&latitude, &longitude).await.unwrap();
+        let result = get_weather_forecast(weather_point).await;
+        assert!(result.is_ok());
+    }
+}

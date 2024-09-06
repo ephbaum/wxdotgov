@@ -137,3 +137,30 @@ fn extract_input(input: &str) -> Option<InputType> {
         return None;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio;
+
+    #[tokio::test]
+    async fn test_main_postal_code() {
+        let args = vec!["wxdotgov".to_string(), "12345".to_string()];
+        let result = main(args).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_main_city() {
+        let args = vec!["wxdotgov".to_string(), "New York".to_string()];
+        let result = main(args).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_main_city_with_state() {
+        let args = vec!["wxdotgov".to_string(), "Seattle, WA".to_string()];
+        let result = main(args).await;
+        assert!(result.is_ok());
+    }
+}

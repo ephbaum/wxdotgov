@@ -73,3 +73,30 @@ pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result
 
     Ok(response[0].clone())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::LocationInput;
+
+    #[tokio::test]
+    async fn test_get_lat_lon_postal_code() {
+        let input = LocationInput::PostalCode("12345".to_string());
+        let result = get_lat_lon(input, None).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_city() {
+        let input = LocationInput::City("New York".to_string());
+        let result = get_lat_lon(input, None).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_city_with_state() {
+        let input = LocationInput::CityWithState("Seattle".to_string(), "WA".to_string());
+        let result = get_lat_lon(input, None).await;
+        assert!(result.is_ok());
+    }
+}
