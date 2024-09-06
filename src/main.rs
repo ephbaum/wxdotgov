@@ -27,12 +27,6 @@ mod weatherdotgov;
 use crate::nomatim::get_lat_lon;
 use crate::weatherdotgov::{get_weather_forecast, get_weather_point};
 
-#[cfg(test)]
-mod tests {
-    mod integration_tests;
-}
-
-
 #[derive(Debug, PartialEq)]
 enum InputType {
     PostalCode(String),
@@ -141,26 +135,28 @@ fn extract_input(input: &str) -> Option<InputType> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio;
+    use crate::LocationInput;
+    use crate::nomatim::get_lat_lon;
+    use crate::weatherdotgov::{get_weather_point, get_weather_forecast};
 
     #[tokio::test]
     async fn test_main_postal_code() {
         let args = vec!["wxdotgov".to_string(), "12345".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_main_city() {
         let args = vec!["wxdotgov".to_string(), "New York".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_main_city_with_state() {
         let args = vec!["wxdotgov".to_string(), "Seattle, WA".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 }

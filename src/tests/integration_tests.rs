@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{extract_input, InputType};
+    use crate::{extract_input, InputType, LocationInput};
     use crate::nomatim::get_lat_lon;
     use crate::weatherdotgov::{get_weather_point, get_weather_forecast};
     use crate::main;
@@ -109,21 +109,21 @@ mod tests {
     #[tokio::test]
     async fn test_main_postal_code() {
         let args = vec!["wxdotgov".to_string(), "12345".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_main_city() {
         let args = vec!["wxdotgov".to_string(), "New York".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_main_city_with_state() {
         let args = vec!["wxdotgov".to_string(), "Seattle, WA".to_string()];
-        let result = main(args).await;
+        let result = main().await;
         assert!(result.is_ok());
     }
 }
