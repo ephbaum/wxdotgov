@@ -65,4 +65,87 @@ mod tests {
         assert_eq!(extract_input(input), expected);
     }
 
+    #[test]
+    fn test_extract_input_invalid_city_name() {
+        let input = "New York123";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_invalid_state_code() {
+        let input = "Seattle, WAA";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_postal_code() {
+        let input = "00000";
+        let expected = Some(InputType::PostalCode(input.to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_extended_postal_code() {
+        let input = "00000-0000";
+        let expected = Some(InputType::ExtendedPostalCode("00000".to_string(), "0000".to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_city_name() {
+        let input = "A";
+        let expected = Some(InputType::City(input.to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_edge_case_city_with_state() {
+        let input = "A, AA";
+        let expected = Some(InputType::CityWithState("A".to_string(), "AA".to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_empty_string() {
+        let input = "";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_special_characters() {
+        let input = "@#$%^&*";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_mixed_valid_invalid() {
+        let input = "12345, New York";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_postal_code_with_spaces() {
+        let input = " 12345 ";
+        let expected = Some(InputType::PostalCode(input.trim().to_string()));
+        assert_eq!(extract_input(input.trim()), expected);
+    }
+
+    #[test]
+    fn test_extract_input_city_with_special_characters() {
+        let input = "New York!";
+        let expected = None;
+        assert_eq!(extract_input(input), expected);
+    }
+
+    #[test]
+    fn test_extract_input_state_with_lowercase() {
+        let input = "Seattle, wa";
+        let expected = Some(InputType::CityWithState("Seattle".to_string(), "wa".to_string()));
+        assert_eq!(extract_input(input), expected);
+    }
 }
