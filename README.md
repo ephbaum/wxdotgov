@@ -29,3 +29,13 @@ I've been enjoying playing with Rust Lang and I figured: "why not make a termina
 I'm just noodling on this as I go to learn, most of this was written with Co-pilot and poking around `cargo docs` with a bit of prior experience toying with Rust.
 
 I'm a Rust novice and I'm open to [feedback](https://github.com/ephbaum/wxdotgov/issues). 
+
+## Running Tests
+
+To run the tests, use the following command:
+
+```sh
+cargo test
+```
+
+This will execute all the tests, including the integration tests that mock external API calls.
