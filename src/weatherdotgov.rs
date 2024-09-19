@@ -191,3 +191,41 @@ pub async fn get_weather_forecast(weather_point: WeatherPoint) -> Result<String,
     let forecast: String = response.text().await.map_err(MyError::Reqwest)?;
     Ok(forecast)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::{mock, Matcher};
+
+    #[tokio::test]
+    async fn test_get_weather_point() {
+        let _m = mock("GET", Matcher::Regex(r"^/points/40.7128,-74.0060$".to_string()))
+            .with_status(200)
+            .with_body(r#"{"properties": {"forecast": "https://api.weather.gov/gridpoints/SEW/115,68/forecast"}}"#)
+            .create();
+
+        let result = get_weather_point(&"40.7128".to_string(), &"-74.0060".to_string()).await;
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.properties.forecast, "https://api.weather.gov/gridpoints/SEW/115,68/forecast");
+    }
+
+    #[tokio::test]
+    async fn test_get_weather_forecast() {
+        let _m = mock("GET", Matcher::Regex(r"^/gridpoints/SEW/115,68/forecast$".to_string()))
+            .with_status(200)
+            .with_body(r#"{"properties": {"periods": [{"name": "Tonight", "detailedForecast": "A chance of rain."}]}}"#)
+            .create();
+
+        let weather_point = WeatherPoint {
+            properties: Properties {
+                forecast: format!("{}/gridpoints/SEW/115,68/forecast", &mockito::server_url()),
+            },
+        };
+
+        let result = get_weather_forecast(weather_point).await;
+        assert!(result.is_ok());
+        let forecast = result.unwrap();
+        assert!(forecast.contains("A chance of rain."));
+    }
+}
