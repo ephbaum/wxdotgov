@@ -73,3 +73,77 @@ pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result
 
     Ok(response[0].clone())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::Server;
+
+    #[tokio::test]
+    async fn test_get_lat_lon_postal_code() {
+        let mut server = Server::new();
+        let mock = server.mock("GET", "/search?postalcode=12345&format=json")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "40.7128", "lon": "-74.0060"}]"#)
+            .create();
+
+        let result = get_lat_lon(LocationInput::PostalCode("12345".to_string()), Some(&server.url())).await;
+        mock.assert();
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.lat, "40.7128");
+        assert_eq!(response.lon, "-74.0060");
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_extended_postal_code() {
+        let mut server = Server::new();
+        let mock = server.mock("GET", "/search?postalcode=12345&format=json")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "40.7128", "lon": "-74.0060"}]"#)
+            .create();
+
+        let result = get_lat_lon(LocationInput::PostalCodePlusFour("12345".to_string(), "6789".to_string()), Some(&server.url())).await;
+        mock.assert();
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.lat, "40.7128");
+        assert_eq!(response.lon, "-74.0060");
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_city() {
+        let mut server = Server::new();
+        let mock = server.mock("GET", "/search?city=New%20York&format=json")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "40.7128", "lon": "-74.0060"}]"#)
+            .create();
+
+        let result = get_lat_lon(LocationInput::City("New York".to_string()), Some(&server.url())).await;
+        mock.assert();
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.lat, "40.7128");
+        assert_eq!(response.lon, "-74.0060");
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_city_with_state() {
+        let mut server = Server::new();
+        let mock = server.mock("GET", "/search?city=Seattle&state=WA&format=json")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "47.6062", "lon": "-122.3321"}]"#)
+            .create();
+
+        let result = get_lat_lon(LocationInput::CityWithState("Seattle".to_string(), "WA".to_string()), Some(&server.url())).await;
+        mock.assert();
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        assert_eq!(response.lat, "47.6062");
+        assert_eq!(response.lon, "-122.3321");
+    }
+}
