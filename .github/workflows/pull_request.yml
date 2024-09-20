@@ -3,5 +3,5 @@ name: Pull Request
 on: [ pull_request ]
 
 jobs:
-  call-rust-tests:
+  cargo-test:
     uses: ./.github/workflows/rust_tests.yml
