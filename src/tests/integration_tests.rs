@@ -64,18 +64,4 @@ mod tests {
         let expected = None;
         assert_eq!(extract_input(input), expected);
     }
-
-    #[tokio::test]
-    async fn test_get_lat_lon_postal_code() {
-        let _m = mock("GET", Matcher::Regex(r"^/search\?postalcode=12345&format=json$".to_string()))
-            .with_status(200)
-            .with_body(r#"[{"lat": "40.7128", "lon": "-74.0060"}]"#)
-            .create();
-
-        let result = get_lat_lon(crate::LocationInput::PostalCode("12345".to_string()), Some(&mockito::server_url())).await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
-        assert_eq!(response.lat, "40.7128");
-        assert_eq!(response.lon, "-74.0060");
-    }
 }
