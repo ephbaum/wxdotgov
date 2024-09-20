@@ -191,3 +191,77 @@ pub async fn get_weather_forecast(weather_point: WeatherPoint) -> Result<String,
     let forecast: String = response.text().await.map_err(MyError::Reqwest)?;
     Ok(forecast)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mockito::{mock, Matcher};
+
+    #[tokio::test]
+    async fn test_get_weather_point() {
+        let _m = mock("GET", Matcher::Regex(r"^/points/47.5619,-122.625$".to_string()))
+            .with_status(200)
+            .with_body(r#"{
+                "properties": {
+                    "forecast": "https://api.weather.gov/gridpoints/SEW/115,68/forecast"
+                }
+            }"#)
+            .create();
+
+        let result = get_weather_point(&"47.5619".to_string(), &"-122.625".to_string()).await;
+        assert!(result.is_ok());
+        let weather_point = result.unwrap();
+        assert_eq!(weather_point.properties.forecast, "https://api.weather.gov/gridpoints/SEW/115,68/forecast");
+    }
+
+    #[tokio::test]
+    async fn test_get_weather_forecast() {
+        let _m = mock("GET", Matcher::Regex(r"^/gridpoints/SEW/115,68/forecast$".to_string()))
+            .with_status(200)
+            .with_body(r#"{
+                "properties": {
+                    "periods": [
+                        {
+                            "number": 1,
+                            "name": "Tonight",
+                            "startTime": "2024-01-28T18:00:00-08:00",
+                            "endTime": "2024-01-29T06:00:00-08:00",
+                            "isDaytime": false,
+                            "temperature": 51,
+                            "temperatureUnit": "F",
+                            "temperatureTrend": "rising",
+                            "probabilityOfPrecipitation": {
+                                "unitCode": "wmoUnit:percent",
+                                "value": 40
+                            },
+                            "dewpoint": {
+                                "unitCode": "wmoUnit:degC",
+                                "value": 12.222222222222221
+                            },
+                            "relativeHumidity": {
+                                "unitCode": "wmoUnit:percent",
+                                "value": 91
+                            },
+                            "windSpeed": "5 mph",
+                            "windDirection": "SSW",
+                            "icon": "https://api.weather.gov/icons/land/night/rain,40/rain,20?size=medium",
+                            "shortForecast": "Chance Light Rain",
+                            "detailedForecast": "A chance of rain. Mostly cloudy. Low around 51, with temperatures rising to around 53 overnight. South southwest wind around 5 mph. Chance of precipitation is 40%. New rainfall amounts less than a tenth of an inch possible."
+                        }
+                    ]
+                }
+            }"#)
+            .create();
+
+        let weather_point = WeatherPoint {
+            properties: Properties {
+                forecast: "https://api.weather.gov/gridpoints/SEW/115,68/forecast".to_string(),
+            },
+        };
+
+        let result = get_weather_forecast(weather_point).await;
+        assert!(result.is_ok());
+        let forecast = result.unwrap();
+        assert!(forecast.contains("Chance Light Rain"));
+    }
+}
