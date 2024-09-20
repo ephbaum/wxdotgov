@@ -1,0 +1,23 @@
+{
+	"name": "Rust Dev Container",
+	"image": "mcr.microsoft.com/devcontainers/rust:latest",
+	"features": {
+		"ghcr.io/devcontainers/features/rust:1": {
+			"version": "latest",
+			"profile": "minimal",
+			"targets": "aarch64-unknown-linux-gnu"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.shell.linux": "/bin/bash"
+			},
+			"extensions": [
+				"rust-lang.rust-analyzer"
+			]
+		}
+	},
+	"postCreateCommand": "cargo build",
+	"remoteUser": "vscode"
+}
