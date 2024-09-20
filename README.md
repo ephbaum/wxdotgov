@@ -1,12 +1,25 @@
 # WXdotGOV
 
-**Note: This is WIP and doesn't really do anything yet. You've been warned.
+**Note: This application is under development. Some functionalities are implemented, while others are planned.
 
-## Plan
+## Implemented Functionalities
 
-This is meant to be a command application build in [Rust](https://www.rust-lang.org/)
+- Accepts a location and returns the weather forecast from a zip code, zip plus 4, city, or city & state.
+- Fetches latitude and longitude from `nominatim.openstreetmap.org`.
+- Fetches weather data from `api.weather.gov`.
 
-Should accept a location and return the weather forecast from a zip code, zip plus 4, city, or city & state from `api.weather.gov` using a geoencoded latitude and longitude data using `nominatim.openstreetmap.org`.
+## Planned Functionalities
+
+- Additional input validation and error handling.
+- Improved user interface and experience.
+- Support for more location input formats.
+
+## Examples
+
+- `wxdotgov 12345`
+- `wxdotgov 12345-6789`
+- `wxdotgov "New York"`
+- `wxdotgov "Seattle, WA"`
 
 ## Resources
 
@@ -16,7 +29,7 @@ Should accept a location and return the weather forecast from a zip code, zip pl
         - GET https://nominatim.openstreetmap.org/search?postalcode=99901&format=json
 - `api.weather.gov`
     - [Docs](https://www.weather.gov/documentation/services-web-api) 
-    - Basic Worflow
+    - Basic Workflow
         - GET https://api.weather.gov/points/47.5619,-122.625
         - GET https://api.weather.gov/gridpoints/SEW/115,68/forecast
 
