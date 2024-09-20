@@ -1,0 +1,16 @@
+name: Branch Protection
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  prevent-main-commit:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+        - name: Prevent direct commits to main
+          run: |
+            echo "Direct commits to main are not allowed."
+            exit 1
