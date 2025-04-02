@@ -17,29 +17,15 @@
  * $ wxdotgov "Seattle, WA"
  */
 
-use std::env;
-use regex::Regex;
-
+use anyhow::{bail, Context, Result};
+use clap::{Parser, ValueEnum};
+use colored::*;
 
 mod nomatim;
 mod weatherdotgov;
 
 use crate::nomatim::get_lat_lon;
-use crate::weatherdotgov::{get_weather_forecast, get_weather_point};
-
-#[cfg(test)]
-mod tests {
-    mod integration_tests;
-}
-
-
-#[derive(Debug, PartialEq)]
-enum InputType {
-    PostalCode(String),
-    ExtendedPostalCode(String, String),
-    City(String),
-    CityWithState(String, String),
-}
+use crate::weatherdotgov::{get_detailed_forecast, get_hourly_forecast, get_weather_point};
 
 #[derive(Debug)]
 pub enum LocationInput {
@@ -49,91 +35,158 @@ pub enum LocationInput {
     CityWithState(String, String),
 }
 
+#[derive(Parser)]
+#[command(
+    author,
+    version,
+    about,
+    long_about = None,
+    arg_required_else_help = true,
+    group = clap::ArgGroup::new("location")
+        .required(true)
+        .args(["zip", "city"]),
+)]
+struct Args {
+    /// ZIP code in the U.S.
+    #[arg(short, long, group = "location")]
+    zip: Option<String>,
+
+    /// City name (when using city/state search)
+    #[arg(short, long, group = "location")]
+    city: Option<String>,
+
+    /// State abbreviation (e.g., CA)
+    #[arg(short, long)]
+    state: Option<String>,
+
+    /// Enable pretty output with colors and formatting.
+    #[arg(long)]
+    pretty: bool,
+
+    /// Forecast type to display. Options: detailed or hourly.
+    #[arg(long, value_enum, default_value_t = ForecastType::Detailed)]
+    forecast_type: ForecastType,
+}
+
+#[derive(Clone, Debug, PartialEq, ValueEnum)]
+enum ForecastType {
+    Detailed,
+    Hourly,
+}
+
+#[cfg(test)]
+mod tests {
+    mod integration_tests;
+    mod api_tests;
+    mod app_tests;
+}
+
 #[tokio::main]
-async fn main() {
-    let args: Vec<String> = env::args().collect();
-    let input = get_args(args);
+async fn main() -> Result<()> {
+    // Parse command-line arguments.
+    let args = Args::parse();
 
-    let input_type = match extract_input(&input) {
-        Some(input_type) => input_type,
-        None => {
-            println!("Invalid input");
-            return;
+    // Build the location input.
+    let location_input = if let Some(zip) = args.zip {
+        LocationInput::PostalCode(zip)
+    } else if let Some(city) = args.city.clone() {
+        if let Some(state) = args.state {
+            LocationInput::CityWithState(city, state)
+        } else {
+            LocationInput::City(city)
         }
+    } else {
+        bail!("Please provide either a ZIP code or both city and state.");
     };
 
-    let result = match &input_type {
-        InputType::PostalCode(code) | InputType::ExtendedPostalCode(code, _) => {
-            println!("Got a code: {}", code);
-            get_lat_lon(LocationInput::PostalCode(code.clone()), None).await
-        }
-        InputType::City(city) => {
-            println!("Got a city: {}", city);
-            get_lat_lon(LocationInput::City(city.clone()), None).await
-        }
-        InputType::CityWithState(city, state) => {
-            println!("Got a city and state: {}, {}", city, state);
-            get_lat_lon(LocationInput::CityWithState(city.clone(), state.clone()), None).await
-        }
+    // Step 1: Geocode with Nominatim.
+    let location = get_lat_lon(location_input, None).await?;
+    println!("Location found: {}", location.display_name);
+
+    // Step 2: Get points data from Weather.gov.
+    let points_resp = get_weather_point(&location.lat, &location.lon).await?;
+
+    // Select the forecast URL based on the chosen forecast type.
+    let forecast_url = match args.forecast_type {
+        ForecastType::Hourly => points_resp
+            .properties
+            .forecast_hourly
+            .as_ref()
+            .context("Hourly forecast not available for this location")?,
+        ForecastType::Detailed => &points_resp.properties.forecast,
     };
 
-    match result {
-        Ok(response) => {
-            println!("Got a response: {:?}", response);
-            // Assuming the response is a struct with lat and lon fields
-            let weather_point = get_weather_point(&response.lat, &response.lon).await;
-            match weather_point {
-                Ok(wp) => {
-                    let forecast = get_weather_forecast(wp).await;
-                    match forecast {
-                        Ok(f) => {
-                            println!("Got a forecast: {}", f);
-                        }
-                        Err(e) => {
-                            println!("Failed to get forecast: {:?}", e);
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("Failed to get weather point: {:?}", e);
-                }
+    println!("Fetching forecast from: {}", forecast_url);
+
+    // Step 3: Fetch and display the forecast.
+    if args.forecast_type == ForecastType::Detailed {
+        let forecast_resp = get_detailed_forecast(forecast_url).await?;
+        if args.pretty {
+            println!("\n{}", "Weather Forecast:".bold().underline().bright_white());
+        } else {
+            println!("\nWeather Forecast:");
+        }
+        println!();
+
+        // Print each detailed forecast period.
+        for period in forecast_resp.properties.periods.iter() {
+            if args.pretty {
+                // Bold and blue for the period name.
+                println!("{}", period.name.bold().blue());
+                // Green for detailed forecast.
+                println!("{}", period.detailed_forecast.green());
+            } else {
+                println!("{}: {}", period.name, period.detailed_forecast);
+            }
+            // Dim the separator line.
+            if args.pretty {
+                println!("{}", "-------------------------------------".dimmed());
+            } else {
+                println!("-------------------------------------");
             }
         }
-        Err(e) => {
-            println!("Got an error: {:?}", e);
+    } else {
+        // Hourly forecast branch.
+        let hourly_forecast_resp = get_hourly_forecast(forecast_url).await?;
+        if args.pretty {
+            println!("\n{}", "Hourly Weather Forecast:".bold().underline().bright_white());
+        } else {
+            println!("\nHourly Weather Forecast:");
+        }
+        println!();
+
+        // Print each hourly forecast period.
+        for period in hourly_forecast_resp.properties.periods.iter() {
+            if args.pretty {
+                // Bold and blue for the start time.
+                println!("{}", period.start_time.bold().blue());
+                // Use yellow for temperature and cyan for the rest.
+                println!(
+                    "{}°{} | {} | Wind: {} {}",
+                    period.temperature.to_string().yellow(),
+                    period.temperature_unit.yellow(),
+                    period.short_forecast.cyan(),
+                    period.wind_speed.cyan(),
+                    period.wind_direction.cyan()
+                );
+            } else {
+                println!(
+                    "{}: {}°{} | {} | Wind: {} {}",
+                    period.start_time,
+                    period.temperature,
+                    period.temperature_unit,
+                    period.short_forecast,
+                    period.wind_speed,
+                    period.wind_direction,
+                );
+            }
+            if args.pretty {
+                println!("{}", "-------------------------------------".dimmed());
+            } else {
+                println!("-------------------------------------");
+            }
         }
     }
 
-    // use lat/lon with weatherdotgov module to get forecast
-
-
-}
-
-fn get_args(args: Vec<String>) -> String {
-    args.into_iter().skip(1).collect::<Vec<String>>().join(" ")
-}
-
-fn extract_input(input: &str) -> Option<InputType> {
-    let postal_code = Regex::new(r"^\d{5}$").unwrap();
-    let extended_postal_code = Regex::new(r"^\d{5}-\d{4}$").unwrap();
-    let city_name = Regex::new(r"^[a-zA-Z\s.]+$").unwrap();
-    let city_state = Regex::new(r"^[a-zA-Z\s.]+,\s*[a-zA-Z]{2}$").unwrap();
-
-    if postal_code.is_match(input) {
-        return Some(InputType::PostalCode(input.to_string()));
-    } else if extended_postal_code.is_match(input) {
-        let mut split_input = input.split("-");
-        let first = split_input.next().unwrap();
-        let second = split_input.next().unwrap();
-        return Some(InputType::ExtendedPostalCode(first.to_string(), second.to_string()));
-    } else if city_name.is_match(input) {
-        return Some(InputType::City(input.to_string()));
-    } else if city_state.is_match(input) {
-        let mut split_input = input.split(",");
-        let first = split_input.next().unwrap().trim();
-        let second = split_input.next().unwrap().trim();
-        return Some(InputType::CityWithState(first.to_string(), second.to_string()));
-    } else {
-        return None;
-    }
+    Ok(())
 }
