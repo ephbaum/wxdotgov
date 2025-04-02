@@ -1,44 +1,99 @@
 # WXdotGOV
 
-**Note: This application is under development. Some functionalities are implemented, while others are planned.
+A command-line weather application written in Rust that fetches weather forecasts from the National Weather Service API.
 
-## Implemented Functionalities
+## Features
 
-- Accepts a location and returns the weather forecast from a zip code, zip plus 4, city, or city & state.
-- Fetches latitude and longitude from `nominatim.openstreetmap.org`.
-- Fetches weather data from `api.weather.gov`.
+- Location search by:
+  - ZIP code
+  - City name
+  - City and state combination
+- Two forecast types:
+  - Detailed forecast (default)
+  - Hourly forecast
+- Pretty printing with colored output
+- Error handling with informative messages
+- Uses OpenStreetMap's Nominatim for geocoding
+- Uses the National Weather Service API for weather data
 
-## Planned Functionalities
+## Installation
 
-- Additional input validation and error handling.
-- Improved user interface and experience.
-- Support for more location input formats.
+Make sure you have Rust and Cargo installed. Then:
 
-## Examples
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/wxdotgov.git
+cd wxdotgov
 
-- `wxdotgov 12345`
-- `wxdotgov 12345-6789`
-- `wxdotgov "New York"`
-- `wxdotgov "Seattle, WA"`
+# Build the project
+cargo build --release
 
-## Resources
+# The binary will be available in target/release/wxdotgov
+```
 
-- `nominatim.openstreetmap.org`
-    - [Search](https://nominatim.org/release-docs/develop/api/Search/)
-        - GET https://nominatim.openstreetmap.org/search?city=ketchikan&format=json
-        - GET https://nominatim.openstreetmap.org/search?postalcode=99901&format=json
-- `api.weather.gov`
-    - [Docs](https://www.weather.gov/documentation/services-web-api) 
-    - Basic Workflow
-        - GET https://api.weather.gov/points/47.5619,-122.625
-        - GET https://api.weather.gov/gridpoints/SEW/115,68/forecast
+## Usage
+
+```bash
+# Get help and see all available options
+wxdotgov --help
+
+# Get weather by ZIP code
+wxdotgov --zip 98101
+
+# Get weather by city and state
+wxdotgov --city "Seattle" --state WA
+
+# Get weather by city only (less precise)
+wxdotgov --city "Seattle"
+
+# Get hourly forecast with pretty printing
+wxdotgov --city "Seattle" --state WA --forecast-type hourly --pretty
+
+# Get detailed forecast with pretty printing
+wxdotgov --city "New York" --state NY --pretty
+```
+
+### Command-line Options
+
+- `-z, --zip <ZIP>`: ZIP code in the U.S.
+- `-c, --city <CITY>`: City name
+- `-s, --state <STATE>`: State abbreviation (e.g., CA)
+- `--pretty`: Enable pretty output with colors and formatting
+- `--forecast-type <TYPE>`: Type of forecast to display [possible values: detailed, hourly]
+- `-h, --help`: Print help
+- `-V, --version`: Print version
+
+## APIs Used
+
+- **Nominatim (OpenStreetMap)**
+  - Used for geocoding (converting location names to coordinates)
+  - [API Documentation](https://nominatim.org/release-docs/develop/api/Search/)
+
+- **National Weather Service API**
+  - Used for weather forecasts
+  - [API Documentation](https://www.weather.gov/documentation/services-web-api)
+
+## Error Handling
+
+The application includes robust error handling for:
+- Invalid location inputs
+- Network request failures
+- API response parsing
+- Missing forecast data
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Why?
 
-I've been enjoying playing with Rust Lang and I figured: "why not make a terminal application from an open service like so many before me?"
-
-## How
-
-I'm just noodling on this as I go to learn, most of this was written with Co-pilot and poking around `cargo docs` with a bit of prior experience toying with Rust.
-
-I'm a Rust novice and I'm open to [feedback](https://github.com/ephbaum/wxdotgov/issues). 
+This project serves as both a useful weather tool and a learning exercise in Rust, demonstrating:
+- API integration
+- Error handling
+- Command-line argument parsing
+- Pretty printing and user interface
+- Modular code organization
