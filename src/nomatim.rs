@@ -17,59 +17,51 @@
  * Nomatim API docs: https://nominatim.org/release-docs/develop/api/Search/
  */
 
-use reqwest::Error;
-use serde::{Deserialize, Serialize};
+use anyhow::{Context, Result};
+use serde::Deserialize;
 
 use crate::LocationInput;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct NomatimResponse {
+#[derive(Debug, Deserialize, Clone)]
+pub struct NominatimLocation {
     pub lat: String,
     pub lon: String,
+    pub display_name: String,
 }
 
-pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result<NomatimResponse, Error> {
-    let default_base_url = "https://nominatim.openstreetmap.org/search?";
+pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result<NominatimLocation> {
+    let default_base_url = "https://nominatim.openstreetmap.org";
     let base_url = base_url.unwrap_or(default_base_url);
-    let format = "&format=json";
-    let mut url = String::new();
-
-    match input {
-        LocationInput::PostalCode(code) => {
-            url.push_str(base_url);
-            url.push_str("postalcode=");
-            url.push_str(&code);
-            url.push_str(format);
-        }
-        LocationInput::PostalCodePlusFour(code, _) => {
-            url.push_str(base_url);
-            url.push_str("postalcode=");
-            url.push_str(&code);
-            url.push_str(format);
-        }
-        LocationInput::City(city) => {
-            url.push_str(base_url);
-            url.push_str("city=");
-            url.push_str(&city);
-            url.push_str(format);
-        }
-        LocationInput::CityWithState(city, state) => {
-            url.push_str(base_url);
-            url.push_str("city=");
-            url.push_str(&city);
-            url.push_str("&state=");
-            url.push_str(&state);
-            url.push_str(format);
-        }
-    }
     let client = reqwest::Client::new();
+
+    let query = match input {
+        LocationInput::PostalCode(code) => format!("{}, USA", code),
+        LocationInput::PostalCodePlusFour(code, _) => format!("{}, USA", code),
+        LocationInput::City(city) => format!("{}, USA", city),
+        LocationInput::CityWithState(city, state) => format!("{}, {}, USA", city, state),
+    };
+
+    let url = format!("{}/search", base_url);
+
     let response = client
         .get(&url)
-        .header("User-Agent", "reqwest")
+        .query(&[
+            ("q", &query),
+            ("format", &"json".to_string()),
+            ("limit", &"1".to_string()),
+        ])
+        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
-        .await?
-        .json::<Vec<NomatimResponse>>()
-        .await?;
+        .await
+        .context("Error sending request to Nominatim")?;
 
-    Ok(response[0].clone())
+    let body = response.text().await.context("Error reading response body")?;
+
+    let locations: Vec<NominatimLocation> = serde_json::from_str(&body)
+        .context("Error parsing JSON from Nominatim response")?;
+
+    locations
+        .into_iter()
+        .next()
+        .context("No location found. Make sure your query is correct.")
 }
