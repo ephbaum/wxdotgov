@@ -128,66 +128,122 @@
  */
 
 use serde::Deserialize;
+use anyhow::{bail, Context, Result};
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct WeatherPoint {
-    properties: Properties,
+#[derive(Debug, Deserialize)]
+pub struct PointsResponse {
+    pub properties: PointsProperties,
 }
 
-#[derive(Clone, Debug, Deserialize)]
-struct Properties {
-    forecast: String,
-    // grid_id: String,
-    // grid_x: i32,
-    // grid_y: i32,
-    // forecast_hourly: String,
+#[derive(Debug, Deserialize)]
+pub struct PointsProperties {
+    pub forecast: String,
+    #[serde(rename = "forecastHourly")]
+    pub forecast_hourly: Option<String>,
 }
 
-use std::error::Error as StdError;
-use std::fmt;
-
-#[derive(Debug)]
-pub enum MyError {
-    Reqwest(reqwest::Error),
-    Serde(serde_json::Error),
+#[derive(Debug, Deserialize)]
+pub struct ForecastResponse {
+    pub properties: ForecastProperties,
 }
 
-impl fmt::Display for MyError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MyError::Reqwest(e) => write!(f, "Reqwest error: {}", e),
-            MyError::Serde(e) => write!(f, "Serde error: {}", e),
-        }
-    }
+#[derive(Debug, Deserialize)]
+pub struct ForecastProperties {
+    pub periods: Vec<Period>,
 }
 
-impl StdError for MyError {}
+#[derive(Debug, Deserialize)]
+pub struct Period {
+    pub name: String,
+    #[serde(rename = "detailedForecast")]
+    pub detailed_forecast: String,
+}
 
-pub async fn get_weather_point(latitude: &String, longitude: &String) -> Result<WeatherPoint, MyError> {
-    println!("Getting weather point for {}, {}", latitude, longitude);
-    let url = format!("https://api.weather.gov/points/{},{}", latitude, longitude);
-    println!("URL: {}", url);
+#[derive(Debug, Deserialize)]
+pub struct HourlyForecastResponse {
+    pub properties: HourlyForecastProperties,
+}
 
+#[derive(Debug, Deserialize)]
+pub struct HourlyForecastProperties {
+    pub periods: Vec<HourlyPeriod>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HourlyPeriod {
+    pub start_time: String,
+    pub temperature: i32,
+    pub temperature_unit: String,
+    pub wind_speed: String,
+    pub wind_direction: String,
+    pub short_forecast: String,
+}
+
+pub async fn get_weather_point(latitude: &str, longitude: &str) -> Result<PointsResponse> {
+    let points_url = format!("https://api.weather.gov/points/{},{}", latitude, longitude);
     let client = reqwest::Client::new();
-    let response: serde_json::Value = client
-        .get(&url)
-        .header("User-Agent", "reqwest")
+    
+    let response = client
+        .get(&points_url)
+        .header("Accept", "application/geo+json")
+        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
         .await
-        .map_err(MyError::Reqwest)?
+        .context("Error sending request to Weather.gov points endpoint")?;
+
+    if !response.status().is_success() {
+        let error_text = response.text().await.context("Error reading error response")?;
+        bail!("Weather.gov returned an error for points data: {}", error_text);
+    }
+
+    let points_resp: PointsResponse = response
         .json()
         .await
-        .map_err(MyError::Reqwest)?;
-    println!("Response: {:?}", response);
-
-    let weather_point: WeatherPoint = serde_json::from_value(response).map_err(MyError::Serde)?;
-    Ok(weather_point)
+        .context("Error parsing JSON from Weather.gov points response")?;
+    Ok(points_resp)
 }
 
-pub async fn get_weather_forecast(weather_point: WeatherPoint) -> Result<String, MyError> {
-    let response = reqwest::get(&weather_point.properties.forecast)
+pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastResponse> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get(forecast_url)
+        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
+        .send()
         .await
-        .map_err(MyError::Reqwest)?;
-    let forecast: String = response.text().await.map_err(MyError::Reqwest)?;
-    Ok(forecast)
+        .context("Error sending request to Weather.gov forecast endpoint")?;
+
+    if !response.status().is_success() {
+        let error_text = response.text().await.context("Error reading forecast error response")?;
+        bail!("Weather.gov returned an error for forecast: {}", error_text);
+    }
+
+    let forecast_resp: ForecastResponse = response
+        .json()
+        .await
+        .context("Error parsing JSON from Weather.gov forecast response")?;
+    Ok(forecast_resp)
+}
+
+pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastResponse> {
+    let client = reqwest::Client::new();
+    let response = client
+        .get(forecast_url)
+        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
+        .send()
+        .await
+        .context("Error sending request to Weather.gov hourly forecast endpoint")?;
+
+    if !response.status().is_success() {
+        let error_text = response
+            .text()
+            .await
+            .context("Error reading hourly forecast error response")?;
+        bail!("Weather.gov returned an error for hourly forecast: {}", error_text);
+    }
+
+    let hourly_forecast_resp: HourlyForecastResponse = response
+        .json()
+        .await
+        .context("Error parsing JSON from Weather.gov hourly forecast response")?;
+    Ok(hourly_forecast_resp)
 }
