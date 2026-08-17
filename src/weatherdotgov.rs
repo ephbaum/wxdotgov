@@ -1,4 +1,4 @@
-/**
+/*
  * WeatherDotGov API
  * 
  * This module contains the WeatherDotGov API
@@ -180,7 +180,7 @@ pub struct HourlyPeriod {
 }
 
 pub async fn get_weather_point(latitude: &str, longitude: &str) -> Result<PointsResponse> {
-    let points_url = format!("https://api.weather.gov/points/{},{}", latitude, longitude);
+    let points_url = format!("https://api.weather.gov/points/{latitude},{longitude}");
     let client = reqwest::Client::new();
     
     let response = client
@@ -193,7 +193,7 @@ pub async fn get_weather_point(latitude: &str, longitude: &str) -> Result<Points
 
     if !response.status().is_success() {
         let error_text = response.text().await.context("Error reading error response")?;
-        bail!("Weather.gov returned an error for points data: {}", error_text);
+        bail!("Weather.gov returned an error for points data: {error_text}");
     }
 
     let points_resp: PointsResponse = response
@@ -214,7 +214,7 @@ pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastRespons
 
     if !response.status().is_success() {
         let error_text = response.text().await.context("Error reading forecast error response")?;
-        bail!("Weather.gov returned an error for forecast: {}", error_text);
+        bail!("Weather.gov returned an error for forecast: {error_text}");
     }
 
     let forecast_resp: ForecastResponse = response
@@ -238,7 +238,7 @@ pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastRes
             .text()
             .await
             .context("Error reading hourly forecast error response")?;
-        bail!("Weather.gov returned an error for hourly forecast: {}", error_text);
+        bail!("Weather.gov returned an error for hourly forecast: {error_text}");
     }
 
     let hourly_forecast_resp: HourlyForecastResponse = response

@@ -1,4 +1,4 @@
-/** 
+/* 
  * wxdotgov
  * 
  * a program that takes a US postal code or a city name and, optionally, a state code and outputs the location's weather
@@ -74,13 +74,6 @@ enum ForecastType {
     Hourly,
 }
 
-#[cfg(test)]
-mod tests {
-    mod integration_tests;
-    mod api_tests;
-    mod app_tests;
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     // Parse command-line arguments.
@@ -89,7 +82,7 @@ async fn main() -> Result<()> {
     // Build the location input.
     let location_input = if let Some(zip) = args.zip {
         LocationInput::PostalCode(zip)
-    } else if let Some(city) = args.city.clone() {
+    } else if let Some(city) = args.city {
         if let Some(state) = args.state {
             LocationInput::CityWithState(city, state)
         } else {
@@ -116,7 +109,7 @@ async fn main() -> Result<()> {
         ForecastType::Detailed => &points_resp.properties.forecast,
     };
 
-    println!("Fetching forecast from: {}", forecast_url);
+    println!("Fetching forecast from: {forecast_url}");
 
     // Step 3: Fetch and display the forecast.
     if args.forecast_type == ForecastType::Detailed {
@@ -129,7 +122,7 @@ async fn main() -> Result<()> {
         println!();
 
         // Print each detailed forecast period.
-        for period in forecast_resp.properties.periods.iter() {
+        for period in &forecast_resp.properties.periods {
             if args.pretty {
                 // Bold and blue for the period name.
                 println!("{}", period.name.bold().blue());
@@ -156,7 +149,7 @@ async fn main() -> Result<()> {
         println!();
 
         // Print each hourly forecast period.
-        for period in hourly_forecast_resp.properties.periods.iter() {
+        for period in &hourly_forecast_resp.properties.periods {
             if args.pretty {
                 // Bold and blue for the start time.
                 println!("{}", period.start_time.bold().blue());
@@ -189,4 +182,11 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    mod integration_tests;
+    mod api_tests;
+    mod app_tests;
 }
