@@ -58,16 +58,22 @@ mod tests {
     #[tokio::test]
     async fn test_get_hourly_forecast() {
         let mut server = Server::new_async().await;
+        // Field names here MUST stay camelCase to match what api.weather.gov
+        // actually sends. An earlier snake_case mock silently masked a bug that
+        // made --forecast-type hourly fail against the live API (see #19/#20).
         let mock_response = r#"{
             "properties": {
                 "periods": [
                     {
-                        "start_time": "2024-01-29T02:32:45+00:00",
+                        "number": 1,
+                        "startTime": "2024-01-29T02:32:45+00:00",
+                        "endTime": "2024-01-29T03:32:45+00:00",
+                        "isDaytime": false,
                         "temperature": 51,
-                        "temperature_unit": "F",
-                        "wind_speed": "5 mph",
-                        "wind_direction": "SSW",
-                        "short_forecast": "Partly Cloudy"
+                        "temperatureUnit": "F",
+                        "windSpeed": "5 mph",
+                        "windDirection": "SSW",
+                        "shortForecast": "Partly Cloudy"
                     }
                 ]
             }
@@ -80,10 +86,19 @@ mod tests {
             .create();
 
         let result = get_hourly_forecast(&format!("{}/gridpoints/SEW/115,68/forecast/hourly", server.url())).await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
+        let response = result.expect("hourly forecast should deserialize real NWS camelCase JSON");
         assert_eq!(response.properties.periods.len(), 1);
-        assert_eq!(response.properties.periods[0].temperature, 51);
+
+        // Assert on every renamed field, not just temperature. Checking only
+        // temperature would still pass if the camelCase renames were dropped,
+        // because temperature is the one field whose name needs no remapping.
+        let period = &response.properties.periods[0];
+        assert_eq!(period.start_time, "2024-01-29T02:32:45+00:00");
+        assert_eq!(period.temperature, 51);
+        assert_eq!(period.temperature_unit, "F");
+        assert_eq!(period.wind_speed, "5 mph");
+        assert_eq!(period.wind_direction, "SSW");
+        assert_eq!(period.short_forecast, "Partly Cloudy");
     }
 
     #[tokio::test]

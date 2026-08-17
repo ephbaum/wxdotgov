@@ -136,9 +136,9 @@ pub struct PointsResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PointsProperties {
     pub forecast: String,
-    #[serde(rename = "forecastHourly")]
     pub forecast_hourly: Option<String>,
 }
 
@@ -153,9 +153,9 @@ pub struct ForecastProperties {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Period {
     pub name: String,
-    #[serde(rename = "detailedForecast")]
     pub detailed_forecast: String,
 }
 
@@ -170,6 +170,7 @@ pub struct HourlyForecastProperties {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HourlyPeriod {
     pub start_time: String,
     pub temperature: i32,
