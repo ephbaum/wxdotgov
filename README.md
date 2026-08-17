@@ -5,7 +5,7 @@ A command-line weather application written in Rust that fetches weather forecast
 ## Features
 
 - Location search by:
-  - ZIP code
+  - ZIP code (5-digit or ZIP+4)
   - City name
   - City and state combination
 - Two forecast types:
@@ -22,7 +22,7 @@ Make sure you have Rust and Cargo installed. Then:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/wxdotgov.git
+git clone https://github.com/ephbaum/wxdotgov.git
 cd wxdotgov
 
 # Build the project
@@ -40,6 +40,9 @@ wxdotgov --help
 # Get weather by ZIP code
 wxdotgov --zip 98101
 
+# ZIP+4 is accepted too
+wxdotgov --zip 98101-1234
+
 # Get weather by city and state
 wxdotgov --city "Seattle" --state WA
 
@@ -55,7 +58,7 @@ wxdotgov --city "New York" --state NY --pretty
 
 ### Command-line Options
 
-- `-z, --zip <ZIP>`: ZIP code in the U.S.
+- `-z, --zip <ZIP>`: ZIP code in the U.S. (`12345` or `12345-6789`). Ignores `--state`.
 - `-c, --city <CITY>`: City name
 - `-s, --state <STATE>`: State abbreviation (e.g., CA)
 - `--pretty`: Enable pretty output with colors and formatting
@@ -72,6 +75,13 @@ wxdotgov --city "New York" --state NY --pretty
 - **National Weather Service API**
   - Used for weather forecasts
   - [API Documentation](https://www.weather.gov/documentation/services-web-api)
+
+### Environment Variables
+
+- `WXDOTGOV_USER_AGENT`: overrides the `User-Agent` sent to both APIs. The
+  default identifies the crate, its version, and this repository. Both the NWS
+  API and Nominatim require an identifying User-Agent with usable contact
+  details, so set this to your own contact if you run a fork.
 
 ## Error Handling
 

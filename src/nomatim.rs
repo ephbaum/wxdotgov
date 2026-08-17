@@ -1,21 +1,19 @@
-/**
- * Nomatim API
- * 
- * This module contains the Nomatim API
- * 
- * It's meant to accept either a postal code, a city, or a city with a state code
- * 
- * It will return a JSON object with the geocoded latitude and longitude for the requested location
- * 
- * If the request is based on a postal code, it will call /search?postalcode={postal_code}&format=json
- * If the request is based on a city it will call /search?city={city}&format=json
- * If the request is based on a city and state it will call /search?city={city}&state={state}&format=json
- * 
- * Nomatim returns an array of objects, each of which contains the geocoded latitude and longitude
- * For now we will only return the first OSM object in the array
- * 
- * Nomatim API docs: https://nominatim.org/release-docs/develop/api/Search/
- */
+//! Nomatim API
+//!
+//! This module contains the Nomatim API
+//!
+//! It's meant to accept either a postal code, a city, or a city with a state code
+//!
+//! It will return a JSON object with the geocoded latitude and longitude for the requested location
+//!
+//! If the request is based on a postal code, it will call /search?postalcode={postal_code}&format=json
+//! If the request is based on a city it will call /search?city={city}&format=json
+//! If the request is based on a city and state it will call /search?city={city}&state={state}&format=json
+//!
+//! Nomatim returns an array of objects, each of which contains the geocoded latitude and longitude
+//! For now we will only return the first OSM object in the array
+//!
+//! Nomatim API docs: https://nominatim.org/release-docs/develop/api/Search/
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;

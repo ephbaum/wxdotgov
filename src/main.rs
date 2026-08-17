@@ -1,21 +1,22 @@
-/** 
- * wxdotgov
- * 
- * a program that takes a US postal code or a city name and, optionally, a state code and outputs the location's weather
- * if no arguments are passed, print a message and exit
- * the program should accept a US postal code or a city name and, optionally, a state code 
- * if the input is not valid, print a message and exit
- * if the input is valid, get the latitude and longitude of the location from nomatim.openstreetmap.org
- * use the latitude and longitude to get fetch the weather office and grid points from api.weather.gov
- * use the weather office and grid points to get the weather report and output from api.weather.gov
- * 
- * Examples:
- * 
- * $ wxdotgov 12345
- * $ wxdotgov 12345-6789
- * $ wxdotgov "New York"
- * $ wxdotgov "Seattle, WA"
- */
+//! wxdotgov
+//!
+//! Takes a US postal code, or a city name with an optional state code, and
+//! prints that location's weather forecast.
+//!
+//! The lookup runs in three steps:
+//!
+//! 1. Geocode the location to a latitude/longitude via nominatim.openstreetmap.org
+//! 2. Resolve those coordinates to a forecast office and grid point via api.weather.gov
+//! 3. Fetch and print the forecast for that grid point
+//!
+//! Examples:
+//!
+//! ```text
+//! $ wxdotgov --zip 12345
+//! $ wxdotgov --city "New York"
+//! $ wxdotgov --city Seattle --state WA
+//! $ wxdotgov --city Seattle --state WA --forecast-type hourly --pretty
+//! ```
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
@@ -28,12 +29,63 @@ mod weatherdotgov;
 use crate::nomatim::get_lat_lon;
 use crate::weatherdotgov::{get_detailed_forecast, get_hourly_forecast, get_weather_point};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LocationInput {
     PostalCode(String),
     PostalCodePlusFour(String, String),
     City(String),
     CityWithState(String, String),
+}
+
+/// Parse a US ZIP code, accepting both 5-digit and ZIP+4 forms.
+///
+/// The ZIP+4 form has always been documented but was never parsed, leaving
+/// `PostalCodePlusFour` unconstructible outside tests.
+fn parse_zip(zip: &str) -> Result<LocationInput> {
+    let zip = zip.trim();
+
+    let is_digits = |s: &str| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit());
+
+    if let Some((base, plus_four)) = zip.split_once('-') {
+        if base.len() == 5 && is_digits(base) && plus_four.len() == 4 && is_digits(plus_four) {
+            return Ok(LocationInput::PostalCodePlusFour(
+                base.to_string(),
+                plus_four.to_string(),
+            ));
+        }
+    } else if zip.len() == 5 && is_digits(zip) {
+        return Ok(LocationInput::PostalCode(zip.to_string()));
+    }
+
+    bail!(
+        "'{}' is not a valid US ZIP code. Expected 5 digits (12345) \
+         or ZIP+4 (12345-6789).",
+        zip
+    )
+}
+
+/// Turn the parsed CLI arguments into a single location query.
+fn build_location_input(
+    zip: Option<String>,
+    city: Option<String>,
+    state: Option<String>,
+) -> Result<LocationInput> {
+    // clap's required ArgGroup guarantees exactly one of zip/city is present.
+    match (zip, city) {
+        (Some(zip), _) => {
+            if state.is_some() {
+                // Previously ignored in silence, which looked like the state
+                // had been applied to the lookup.
+                eprintln!("warning: --state is ignored when --zip is given");
+            }
+            parse_zip(&zip)
+        }
+        (None, Some(city)) => Ok(match state {
+            Some(state) => LocationInput::CityWithState(city, state),
+            None => LocationInput::City(city),
+        }),
+        (None, None) => unreachable!("clap's required ArgGroup guarantees zip or city"),
+    }
 }
 
 #[derive(Parser)]
@@ -75,30 +127,13 @@ enum ForecastType {
     Hourly,
 }
 
-#[cfg(test)]
-mod tests {
-    mod integration_tests;
-    mod api_tests;
-    mod app_tests;
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     // Parse command-line arguments.
     let args = Args::parse();
 
     // Build the location input.
-    let location_input = if let Some(zip) = args.zip {
-        LocationInput::PostalCode(zip)
-    } else if let Some(city) = args.city.clone() {
-        if let Some(state) = args.state {
-            LocationInput::CityWithState(city, state)
-        } else {
-            LocationInput::City(city)
-        }
-    } else {
-        bail!("Please provide either a ZIP code or both city and state.");
-    };
+    let location_input = build_location_input(args.zip, args.city, args.state)?;
 
     // Step 1: Geocode with Nominatim.
     let location = get_lat_lon(location_input, None).await?;
@@ -190,4 +225,12 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    mod api_tests;
+    mod app_tests;
+    mod integration_tests;
+    mod location_tests;
 }
