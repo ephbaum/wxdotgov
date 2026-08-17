@@ -8,9 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # The tree builds warning-free, so warnings are hard failures. If this starts
-  # blocking unrelated work, fix the warning rather than removing this.
-  RUSTFLAGS: -Dwarnings
+  # Warnings are denied via the [lints] table in Cargo.toml, not RUSTFLAGS, so
+  # local `cargo build` and CI enforce exactly the same set. See #32.
 
 # Cancel superseded runs on the same ref (a new push to a PR obsoletes the old run).
 concurrency:
@@ -52,8 +51,9 @@ jobs:
       - name: Cache cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
 
+      # Denials come from [lints] in Cargo.toml, so no -D flags are needed here.
       - name: Run clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets
 
   fmt:
     name: Rustfmt
