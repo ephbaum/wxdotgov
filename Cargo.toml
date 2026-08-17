@@ -9,9 +9,10 @@ edition = "2021"
 anyhow = "1.0"
 clap = { version = "4.4", features = ["derive"] }
 colored = "2.1"
-regex = "1"
 reqwest = { version = "0.11.23", features = ["json"] }
 serde = { version = "1.0.196", features = ["derive"] }
-tokio = { version = "1.35.1", features = ["full"] }
-mockito = "1.2.0"
+tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros"] }
 serde_json = "1.0"
+
+[dev-dependencies]
+mockito = "1.2.0"

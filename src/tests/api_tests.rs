@@ -7,7 +7,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather_point() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let mock_response = r#"{
             "properties": {
                 "forecast": "https://api.weather.gov/gridpoints/SEW/115,68/forecast",
@@ -30,7 +30,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_detailed_forecast() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let mock_response = r#"{
             "properties": {
                 "periods": [
@@ -57,7 +57,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_hourly_forecast() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let mock_response = r#"{
             "properties": {
                 "periods": [
@@ -88,7 +88,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_lat_lon() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let mock_response = r#"[
             {
                 "lat": "47.5619",
@@ -115,7 +115,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_weather_point_error() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         server.mock("GET", "/points/invalid,invalid")
             .with_status(400)
             .with_header("content-type", "application/geo+json")
@@ -128,7 +128,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_lat_lon_no_results() {
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let mock_response = r#"[]"#;
 
         server.mock("GET", "/search")
