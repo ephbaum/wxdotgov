@@ -37,7 +37,10 @@ pub struct NominatimLocation {
     pub display_name: String,
 }
 
-pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result<NominatimLocation> {
+pub async fn get_lat_lon(
+    input: LocationInput,
+    base_url: Option<&str>,
+) -> Result<NominatimLocation> {
     let default_base_url = "https://nominatim.openstreetmap.org";
     let base_url = base_url.unwrap_or(default_base_url);
     let client = http::client()?;
@@ -81,10 +84,13 @@ pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result
         );
     }
 
-    let body = response.text().await.context("Error reading response body")?;
+    let body = response
+        .text()
+        .await
+        .context("Error reading response body")?;
 
-    let locations: Vec<NominatimLocation> = serde_json::from_str(&body)
-        .context("Error parsing JSON from Nominatim response")?;
+    let locations: Vec<NominatimLocation> =
+        serde_json::from_str(&body).context("Error parsing JSON from Nominatim response")?;
 
     locations
         .into_iter()

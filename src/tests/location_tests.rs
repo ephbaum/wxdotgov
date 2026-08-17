@@ -64,7 +64,8 @@ mod tests {
     #[test]
     fn city_with_state_is_combined() {
         assert_eq!(
-            build_location_input(None, Some("Seattle".to_string()), Some("WA".to_string())).unwrap(),
+            build_location_input(None, Some("Seattle".to_string()), Some("WA".to_string()))
+                .unwrap(),
             LocationInput::CityWithState("Seattle".to_string(), "WA".to_string())
         );
     }

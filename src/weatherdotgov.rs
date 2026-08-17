@@ -128,8 +128,8 @@
 //!     }
 //! }
 
-use serde::Deserialize;
 use anyhow::{bail, Context, Result};
+use serde::Deserialize;
 
 use crate::http;
 
@@ -202,8 +202,14 @@ pub async fn get_weather_point(
         .context("Error sending request to Weather.gov points endpoint")?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await.context("Error reading error response")?;
-        bail!("Weather.gov returned an error for points data: {}", error_text);
+        let error_text = response
+            .text()
+            .await
+            .context("Error reading error response")?;
+        bail!(
+            "Weather.gov returned an error for points data: {}",
+            error_text
+        );
     }
 
     let points_resp: PointsResponse = response
@@ -222,7 +228,10 @@ pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastRespons
         .context("Error sending request to Weather.gov forecast endpoint")?;
 
     if !response.status().is_success() {
-        let error_text = response.text().await.context("Error reading forecast error response")?;
+        let error_text = response
+            .text()
+            .await
+            .context("Error reading forecast error response")?;
         bail!("Weather.gov returned an error for forecast: {}", error_text);
     }
 
@@ -246,7 +255,10 @@ pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastRes
             .text()
             .await
             .context("Error reading hourly forecast error response")?;
-        bail!("Weather.gov returned an error for hourly forecast: {}", error_text);
+        bail!(
+            "Weather.gov returned an error for hourly forecast: {}",
+            error_text
+        );
     }
 
     let hourly_forecast_resp: HourlyForecastResponse = response

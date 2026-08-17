@@ -158,7 +158,10 @@ async fn main() -> Result<()> {
     if args.forecast_type == ForecastType::Detailed {
         let forecast_resp = get_detailed_forecast(forecast_url).await?;
         if args.pretty {
-            println!("\n{}", "Weather Forecast:".bold().underline().bright_white());
+            println!(
+                "\n{}",
+                "Weather Forecast:".bold().underline().bright_white()
+            );
         } else {
             println!("\nWeather Forecast:");
         }
@@ -185,7 +188,10 @@ async fn main() -> Result<()> {
         // Hourly forecast branch.
         let hourly_forecast_resp = get_hourly_forecast(forecast_url).await?;
         if args.pretty {
-            println!("\n{}", "Hourly Weather Forecast:".bold().underline().bright_white());
+            println!(
+                "\n{}",
+                "Hourly Weather Forecast:".bold().underline().bright_white()
+            );
         } else {
             println!("\nHourly Weather Forecast:");
         }

@@ -70,16 +70,27 @@ mod tests {
         // Guards against the placeholder-contact regression: the UA must carry
         // the real crate version and a reachable contact, never a stub address.
         let ua = user_agent();
-        assert!(ua.starts_with(concat!(env!("CARGO_PKG_NAME"), "/")), "got: {}", ua);
+        assert!(
+            ua.starts_with(concat!(env!("CARGO_PKG_NAME"), "/")),
+            "got: {}",
+            ua
+        );
         assert!(ua.contains(env!("CARGO_PKG_VERSION")), "got: {}", ua);
         assert!(ua.contains(CONTACT), "got: {}", ua);
-        assert!(!ua.contains("example.com"), "placeholder contact in UA: {}", ua);
+        assert!(
+            !ua.contains("example.com"),
+            "placeholder contact in UA: {}",
+            ua
+        );
     }
 
     #[test]
     fn client_is_reused_across_calls() {
         let first = client().expect("client should build");
         let second = client().expect("client should build");
-        assert!(std::ptr::eq(first, second), "client should be cached, not rebuilt");
+        assert!(
+            std::ptr::eq(first, second),
+            "client should be cached, not rebuilt"
+        );
     }
 }
