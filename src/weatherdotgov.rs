@@ -130,6 +130,8 @@
 use serde::Deserialize;
 use anyhow::{bail, Context, Result};
 
+use crate::http;
+
 #[derive(Debug, Deserialize)]
 pub struct PointsResponse {
     pub properties: PointsProperties,
@@ -189,12 +191,11 @@ pub async fn get_weather_point(
 ) -> Result<PointsResponse> {
     let base_url = base_url.unwrap_or(DEFAULT_BASE_URL);
     let points_url = format!("{}/points/{},{}", base_url, latitude, longitude);
-    let client = reqwest::Client::new();
+    let client = http::client()?;
 
     let response = client
         .get(&points_url)
         .header("Accept", "application/geo+json")
-        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
         .await
         .context("Error sending request to Weather.gov points endpoint")?;
@@ -212,10 +213,9 @@ pub async fn get_weather_point(
 }
 
 pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastResponse> {
-    let client = reqwest::Client::new();
+    let client = http::client()?;
     let response = client
         .get(forecast_url)
-        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
         .await
         .context("Error sending request to Weather.gov forecast endpoint")?;
@@ -233,10 +233,9 @@ pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastRespons
 }
 
 pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastResponse> {
-    let client = reqwest::Client::new();
+    let client = http::client()?;
     let response = client
         .get(forecast_url)
-        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
         .await
         .context("Error sending request to Weather.gov hourly forecast endpoint")?;

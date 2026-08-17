@@ -17,10 +17,20 @@
  * Nomatim API docs: https://nominatim.org/release-docs/develop/api/Search/
  */
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 
+use crate::http;
 use crate::LocationInput;
+
+/// Trim an upstream error body so a full HTML page cannot flood the terminal.
+fn truncate(s: &str, max: usize) -> String {
+    if s.chars().count() <= max {
+        return s.to_string();
+    }
+    let head: String = s.chars().take(max).collect();
+    format!("{}...", head)
+}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct NominatimLocation {
@@ -32,7 +42,7 @@ pub struct NominatimLocation {
 pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result<NominatimLocation> {
     let default_base_url = "https://nominatim.openstreetmap.org";
     let base_url = base_url.unwrap_or(default_base_url);
-    let client = reqwest::Client::new();
+    let client = http::client()?;
 
     let query = match input {
         LocationInput::PostalCode(code) => format!("{}, USA", code),
@@ -50,10 +60,28 @@ pub async fn get_lat_lon(input: LocationInput, base_url: Option<&str>) -> Result
             ("format", &"json".to_string()),
             ("limit", &"1".to_string()),
         ])
-        .header("User-Agent", "RustWeatherCLI/0.1 (your_email@example.com)")
         .send()
         .await
         .context("Error sending request to Nominatim")?;
+
+    // Check the status before parsing. Nominatim answers a blocked or
+    // rate-limited request with an HTML error page, which previously surfaced
+    // as a misleading "Error parsing JSON" and pointed at the wrong cause.
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+            bail!(
+                "Nominatim rate-limited this request (HTTP 429). \
+                 Its usage policy allows at most 1 request per second."
+            );
+        }
+        bail!(
+            "Nominatim returned an error (HTTP {}): {}",
+            status,
+            truncate(body.trim(), 200)
+        );
+    }
 
     let body = response.text().await.context("Error reading response body")?;
 

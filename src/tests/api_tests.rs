@@ -157,6 +157,74 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_requests_send_identifying_user_agent() {
+        // End-to-end check that the shared client's UA reaches the wire. The
+        // mock only matches when the header is present and correct, so a
+        // regression to the old placeholder fails at mock.assert().
+        let mut server = Server::new_async().await;
+        let mock = server.mock("GET", "/points/47.5619,-122.625")
+            .match_header("user-agent", crate::http::user_agent().as_str())
+            .with_status(200)
+            .with_header("content-type", "application/geo+json")
+            .with_body(r#"{"properties":{"forecast":"https://example.invalid/forecast"}}"#)
+            .create();
+
+        get_weather_point("47.5619", "-122.625", Some(&server.url()))
+            .await
+            .expect("request carrying the shared User-Agent should match the mock");
+
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_rate_limited() {
+        let mut server = Server::new_async().await;
+        // Nominatim answers a blocked/limited request with HTML, not JSON.
+        let mock = server.mock("GET", "/search")
+            .match_query(mockito::Matcher::Any)
+            .with_status(429)
+            .with_header("content-type", "text/html")
+            .with_body("<html><body>Too Many Requests</body></html>")
+            .create();
+
+        let input = LocationInput::City("Seattle".to_string());
+        let err = get_lat_lon(input, Some(&server.url()))
+            .await
+            .expect_err("HTTP 429 should be an error");
+
+        let msg = format!("{}", err);
+        assert!(msg.contains("rate-limited"), "unexpected message: {}", msg);
+        // The old code fell through to serde and blamed the parser instead.
+        assert!(
+            !msg.contains("Error parsing JSON"),
+            "rate limiting should not surface as a parse error: {}",
+            msg
+        );
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_get_lat_lon_server_error_reports_status() {
+        let mut server = Server::new_async().await;
+        let mock = server.mock("GET", "/search")
+            .match_query(mockito::Matcher::Any)
+            .with_status(503)
+            .with_header("content-type", "text/html")
+            .with_body("<html><body>Service Unavailable</body></html>")
+            .create();
+
+        let input = LocationInput::City("Seattle".to_string());
+        let err = get_lat_lon(input, Some(&server.url()))
+            .await
+            .expect_err("HTTP 503 should be an error");
+
+        let msg = format!("{}", err);
+        assert!(msg.contains("503"), "status code should be surfaced: {}", msg);
+        assert!(!msg.contains("Error parsing JSON"), "got: {}", msg);
+        mock.assert();
+    }
+
+    #[tokio::test]
     async fn test_get_lat_lon_no_results() {
         let mut server = Server::new_async().await;
         let mock_response = r#"[]"#;

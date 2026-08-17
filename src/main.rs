@@ -21,6 +21,7 @@ use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
 use colored::*;
 
+mod http;
 mod nomatim;
 mod weatherdotgov;
 
