@@ -15,17 +15,21 @@ mod tests {
             }
         }"#;
 
-        server.mock("GET", "/points/47.5619,-122.625")
+        let mock = server.mock("GET", "/points/47.5619,-122.625")
             .with_status(200)
             .with_header("content-type", "application/geo+json")
             .with_body(mock_response)
             .create();
 
-        let result = get_weather_point("47.5619", "-122.625").await;
-        assert!(result.is_ok());
-        let response = result.unwrap();
+        let result = get_weather_point("47.5619", "-122.625", Some(&server.url())).await;
+        let response = result.expect("points lookup should succeed against the mock");
         assert!(response.properties.forecast.contains("/forecast"));
         assert!(response.properties.forecast_hourly.unwrap().contains("/forecast/hourly"));
+
+        // Proves the request actually reached the mock. Without this the test
+        // would still pass if the function bypassed base_url and called the
+        // live API, which is exactly the bug this test used to have (#21).
+        mock.assert();
     }
 
     #[tokio::test]
@@ -131,14 +135,25 @@ mod tests {
     #[tokio::test]
     async fn test_get_weather_point_error() {
         let mut server = Server::new_async().await;
-        server.mock("GET", "/points/invalid,invalid")
+        let mock = server.mock("GET", "/points/invalid,invalid")
             .with_status(400)
             .with_header("content-type", "application/geo+json")
             .with_body(r#"{"error": "Invalid coordinates"}"#)
             .create();
 
-        let result = get_weather_point("invalid", "invalid").await;
-        assert!(result.is_err());
+        let result = get_weather_point("invalid", "invalid", Some(&server.url())).await;
+        let err = result.expect_err("a 400 from the points endpoint should be an error");
+
+        // Assert on the message, not just is_err(). This test previously hit
+        // the live API, where any network failure satisfied is_err() -- it
+        // would have passed with the error handling deleted entirely.
+        let msg = format!("{}", err);
+        assert!(
+            msg.contains("Weather.gov returned an error for points data"),
+            "unexpected error message: {}",
+            msg
+        );
+        mock.assert();
     }
 
     #[tokio::test]

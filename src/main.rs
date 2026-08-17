@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
     println!("Location found: {}", location.display_name);
 
     // Step 2: Get points data from Weather.gov.
-    let points_resp = get_weather_point(&location.lat, &location.lon).await?;
+    let points_resp = get_weather_point(&location.lat, &location.lon, None).await?;
 
     // Select the forecast URL based on the chosen forecast type.
     let forecast_url = match args.forecast_type {

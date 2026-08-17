@@ -180,10 +180,17 @@ pub struct HourlyPeriod {
     pub short_forecast: String,
 }
 
-pub async fn get_weather_point(latitude: &str, longitude: &str) -> Result<PointsResponse> {
-    let points_url = format!("https://api.weather.gov/points/{},{}", latitude, longitude);
+pub const DEFAULT_BASE_URL: &str = "https://api.weather.gov";
+
+pub async fn get_weather_point(
+    latitude: &str,
+    longitude: &str,
+    base_url: Option<&str>,
+) -> Result<PointsResponse> {
+    let base_url = base_url.unwrap_or(DEFAULT_BASE_URL);
+    let points_url = format!("{}/points/{},{}", base_url, latitude, longitude);
     let client = reqwest::Client::new();
-    
+
     let response = client
         .get(&points_url)
         .header("Accept", "application/geo+json")
