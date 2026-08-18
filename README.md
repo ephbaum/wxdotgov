@@ -113,10 +113,13 @@ cargo audit                 # RUSTSEC advisories
 
 Lint levels live in the `[lints]` table in `Cargo.toml` rather than in CI, so
 these commands behave identically on your machine and in CI. `cargo audit`
-reads `.cargo/audit.toml`, which ignores one advisory that has no upgrade path
-until the `reqwest` migration in
-[#31](https://github.com/ephbaum/wxdotgov/issues/31); the reasoning is recorded
-in that file.
+runs against an unfiltered advisory database -- there is no ignore list, so a
+new advisory turns CI red rather than being suppressed.
+
+TLS comes from `rustls`, which is `reqwest` 0.13's default. The build needs no
+system OpenSSL (no `libssl-dev`, no `pkg-config`); the crypto provider is
+`aws-lc-rs`, which vendors its own C sources, so a working C compiler is the
+only non-Rust build requirement.
 
 ## Contributing
 
