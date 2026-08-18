@@ -58,4 +58,4 @@ mod tests {
         let result = Args::try_parse_from(args);
         assert!(result.is_err());
     }
-} 
+}

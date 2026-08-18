@@ -1,11 +1,13 @@
 # WXdotGOV
 
+[![CI](https://github.com/ephbaum/wxdotgov/actions/workflows/ci.yml/badge.svg)](https://github.com/ephbaum/wxdotgov/actions/workflows/ci.yml)
+
 A command-line weather application written in Rust that fetches weather forecasts from the National Weather Service API.
 
 ## Features
 
 - Location search by:
-  - ZIP code
+  - ZIP code (5-digit or ZIP+4)
   - City name
   - City and state combination
 - Two forecast types:
@@ -22,7 +24,7 @@ Make sure you have Rust and Cargo installed. Then:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/wxdotgov.git
+git clone https://github.com/ephbaum/wxdotgov.git
 cd wxdotgov
 
 # Build the project
@@ -40,6 +42,9 @@ wxdotgov --help
 # Get weather by ZIP code
 wxdotgov --zip 98101
 
+# ZIP+4 is accepted too
+wxdotgov --zip 98101-1234
+
 # Get weather by city and state
 wxdotgov --city "Seattle" --state WA
 
@@ -55,7 +60,7 @@ wxdotgov --city "New York" --state NY --pretty
 
 ### Command-line Options
 
-- `-z, --zip <ZIP>`: ZIP code in the U.S.
+- `-z, --zip <ZIP>`: ZIP code in the U.S. (`12345` or `12345-6789`). Ignores `--state`.
 - `-c, --city <CITY>`: City name
 - `-s, --state <STATE>`: State abbreviation (e.g., CA)
 - `--pretty`: Enable pretty output with colors and formatting
@@ -73,17 +78,50 @@ wxdotgov --city "New York" --state NY --pretty
   - Used for weather forecasts
   - [API Documentation](https://www.weather.gov/documentation/services-web-api)
 
+### Environment Variables
+
+- `WXDOTGOV_USER_AGENT`: overrides the `User-Agent` sent to both APIs. The
+  default identifies the crate, its version, and this repository. Both the NWS
+  API and Nominatim require an identifying User-Agent with usable contact
+  details, so set this to your own contact if you run a fork.
+
 ## Error Handling
 
-The application includes robust error handling for:
-- Invalid location inputs
-- Network request failures
-- API response parsing
-- Missing forecast data
+The application handles:
+
+- **Invalid location input** — ZIP codes are validated before any network call,
+  so `--zip abcde` fails immediately rather than being sent upstream.
+- **Network failures** — every request carries a 10s timeout (5s to connect),
+  so an unresponsive upstream fails fast instead of hanging.
+- **Upstream errors** — HTTP status is checked before parsing, and the status
+  code is reported. Nominatim rate limiting (HTTP 429) is called out
+  specifically rather than surfacing as a JSON parse error.
+- **Missing forecast data** — a location without an hourly forecast reports
+  that, rather than panicking.
+
+## Development
+
+The test suite is fully offline — it mocks both upstream APIs, so it runs
+without network access and never calls the live services.
+
+```bash
+cargo test                  # 30 tests, no network required
+cargo clippy --all-targets  # warnings are denied
+cargo fmt --all -- --check  # formatting is enforced
+cargo audit                 # RUSTSEC advisories
+```
+
+Lint levels live in the `[lints]` table in `Cargo.toml` rather than in CI, so
+these commands behave identically on your machine and in CI. `cargo audit`
+reads `.cargo/audit.toml`, which ignores one advisory that has no upgrade path
+until the `reqwest` migration in
+[#31](https://github.com/ephbaum/wxdotgov/issues/31); the reasoning is recorded
+in that file.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome — please open a Pull Request. CI runs the four checks
+above on every PR and must be green to merge.
 
 ## License
 

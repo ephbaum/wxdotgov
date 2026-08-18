@@ -9,9 +9,27 @@ edition = "2021"
 anyhow = "1.0"
 clap = { version = "4.4", features = ["derive"] }
 colored = "2.1"
-regex = "1"
 reqwest = { version = "0.11.23", features = ["json"] }
 serde = { version = "1.0.196", features = ["derive"] }
-tokio = { version = "1.35.1", features = ["full"] }
-mockito = "1.2.0"
+tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros"] }
 serde_json = "1.0"
+
+[dev-dependencies]
+mockito = "1.2.0"
+
+# Lints are declared here rather than through RUSTFLAGS in CI, so that a
+# plain `cargo build` reproduces CI's denials locally instead of a
+# contributor seeing warnings pass and only finding the failure in CI.
+#
+# It also keeps RUSTFLAGS unset. RUSTFLAGS participates in the build
+# fingerprint, so setting it in CI alone splits those artifacts from local
+# ones and forces a full rebuild whenever it is toggled.
+#
+# Note this is NOT what stops dependency warnings from failing the build --
+# cargo already passes `--cap-lints allow` to registry dependencies, which
+# holds even when RUSTFLAGS=-Dwarnings is set.
+[lints.rust]
+warnings = "deny"
+
+[lints.clippy]
+all = "deny"
