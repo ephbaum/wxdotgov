@@ -13,6 +13,7 @@ mod tests {
         assert!(parsed.state.is_none());
         assert!(!parsed.pretty);
         assert_eq!(parsed.forecast_type, ForecastType::Detailed);
+        assert_eq!(parsed.limit, crate::render::DEFAULT_LIMIT);
     }
 
     #[tokio::test]
@@ -57,5 +58,26 @@ mod tests {
         let args = vec!["wxdotgov", "--zip", "12345", "--city", "Seattle"];
         let result = Args::try_parse_from(args);
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_args_limit() {
+        let args = vec!["wxdotgov", "--zip", "12345", "--limit", "5"];
+        assert_eq!(Args::try_parse_from(args).unwrap().limit, 5);
+
+        let short = vec!["wxdotgov", "--zip", "12345", "-n", "5"];
+        assert_eq!(Args::try_parse_from(short).unwrap().limit, 5);
+    }
+
+    #[tokio::test]
+    async fn test_args_limit_zero_is_accepted_as_no_limit() {
+        let args = vec!["wxdotgov", "--zip", "12345", "--limit", "0"];
+        assert_eq!(Args::try_parse_from(args).unwrap().limit, 0);
+    }
+
+    #[tokio::test]
+    async fn test_args_limit_rejects_non_numeric() {
+        let args = vec!["wxdotgov", "--zip", "12345", "--limit", "lots"];
+        assert!(Args::try_parse_from(args).is_err());
     }
 }

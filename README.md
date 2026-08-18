@@ -56,6 +56,12 @@ wxdotgov --city "Seattle" --state WA --forecast-type hourly --pretty
 
 # Get detailed forecast with pretty printing
 wxdotgov --city "New York" --state NY --pretty
+
+# Show only the next 6 hourly periods
+wxdotgov --zip 98101 --forecast-type hourly --limit 6
+
+# Show every period the API returned
+wxdotgov --zip 98101 --forecast-type hourly --limit 0
 ```
 
 ### Command-line Options
@@ -65,6 +71,10 @@ wxdotgov --city "New York" --state NY --pretty
 - `-s, --state <STATE>`: State abbreviation (e.g., CA)
 - `--pretty`: Enable pretty output with colors and formatting
 - `--forecast-type <TYPE>`: Type of forecast to display [possible values: detailed, hourly]
+- `-n, --limit <N>`: Maximum number of forecast periods to print [default: 24].
+  Use `0` for all of them. The NWS hourly endpoint returns a week-plus of
+  entries, so the default keeps `--forecast-type hourly` readable; the detailed
+  forecast returns roughly 14 periods, so the default is a no-op there.
 - `-h, --help`: Print help
 - `-V, --version`: Print version
 

@@ -16,17 +16,21 @@
 //! $ wxdotgov --city "New York"
 //! $ wxdotgov --city Seattle --state WA
 //! $ wxdotgov --city Seattle --state WA --forecast-type hourly --pretty
+//! $ wxdotgov --zip 12345 --forecast-type hourly --limit 6
 //! ```
+//!
+//! Fetching lives here; deciding what the output says lives in [`render`].
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, ValueEnum};
-use colored::*;
 
 mod http;
 mod nominatim;
+mod render;
 mod weatherdotgov;
 
 use crate::nominatim::get_lat_lon;
+use crate::render::{render_detailed, render_hourly, Style, DEFAULT_LIMIT};
 use crate::weatherdotgov::{get_detailed_forecast, get_hourly_forecast, get_weather_point};
 
 #[derive(Debug, PartialEq)]
@@ -119,6 +123,10 @@ struct Args {
     /// Forecast type to display. Options: detailed or hourly.
     #[arg(long, value_enum, default_value_t = ForecastType::Detailed)]
     forecast_type: ForecastType,
+
+    /// Maximum number of forecast periods to print. Use 0 for all of them.
+    #[arg(short = 'n', long, default_value_t = DEFAULT_LIMIT)]
+    limit: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, ValueEnum)]
@@ -154,81 +162,22 @@ async fn main() -> Result<()> {
 
     println!("Fetching forecast from: {}", forecast_url);
 
+    let style = Style::from_pretty_flag(args.pretty);
+    // 0 is the "no limit" spelling; every other value is taken literally.
+    let limit = (args.limit != 0).then_some(args.limit);
+
     // Step 3: Fetch and display the forecast.
-    if args.forecast_type == ForecastType::Detailed {
-        let forecast_resp = get_detailed_forecast(forecast_url).await?;
-        if args.pretty {
-            println!(
-                "\n{}",
-                "Weather Forecast:".bold().underline().bright_white()
-            );
-        } else {
-            println!("\nWeather Forecast:");
+    let output = match args.forecast_type {
+        ForecastType::Detailed => {
+            let forecast_resp = get_detailed_forecast(forecast_url).await?;
+            render_detailed(&forecast_resp.properties.periods, style, limit)
         }
-        println!();
-
-        // Print each detailed forecast period.
-        for period in forecast_resp.properties.periods.iter() {
-            if args.pretty {
-                // Bold and blue for the period name.
-                println!("{}", period.name.bold().blue());
-                // Green for detailed forecast.
-                println!("{}", period.detailed_forecast.green());
-            } else {
-                println!("{}: {}", period.name, period.detailed_forecast);
-            }
-            // Dim the separator line.
-            if args.pretty {
-                println!("{}", "-------------------------------------".dimmed());
-            } else {
-                println!("-------------------------------------");
-            }
+        ForecastType::Hourly => {
+            let hourly_forecast_resp = get_hourly_forecast(forecast_url).await?;
+            render_hourly(&hourly_forecast_resp.properties.periods, style, limit)
         }
-    } else {
-        // Hourly forecast branch.
-        let hourly_forecast_resp = get_hourly_forecast(forecast_url).await?;
-        if args.pretty {
-            println!(
-                "\n{}",
-                "Hourly Weather Forecast:".bold().underline().bright_white()
-            );
-        } else {
-            println!("\nHourly Weather Forecast:");
-        }
-        println!();
-
-        // Print each hourly forecast period.
-        for period in hourly_forecast_resp.properties.periods.iter() {
-            if args.pretty {
-                // Bold and blue for the start time.
-                println!("{}", period.start_time.bold().blue());
-                // Use yellow for temperature and cyan for the rest.
-                println!(
-                    "{}°{} | {} | Wind: {} {}",
-                    period.temperature.to_string().yellow(),
-                    period.temperature_unit.yellow(),
-                    period.short_forecast.cyan(),
-                    period.wind_speed.cyan(),
-                    period.wind_direction.cyan()
-                );
-            } else {
-                println!(
-                    "{}: {}°{} | {} | Wind: {} {}",
-                    period.start_time,
-                    period.temperature,
-                    period.temperature_unit,
-                    period.short_forecast,
-                    period.wind_speed,
-                    period.wind_direction,
-                );
-            }
-            if args.pretty {
-                println!("{}", "-------------------------------------".dimmed());
-            } else {
-                println!("-------------------------------------");
-            }
-        }
-    }
+    };
+    print!("{}", output);
 
     Ok(())
 }
@@ -239,4 +188,5 @@ mod tests {
     mod app_tests;
     mod integration_tests;
     mod location_tests;
+    mod render_tests;
 }
