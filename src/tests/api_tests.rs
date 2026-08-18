@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::nomatim::get_lat_lon;
+    use crate::nominatim::get_lat_lon;
     use crate::weatherdotgov::{get_detailed_forecast, get_hourly_forecast, get_weather_point};
     use crate::LocationInput;
     use mockito::Server;

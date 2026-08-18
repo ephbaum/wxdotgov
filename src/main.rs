@@ -23,10 +23,10 @@ use clap::{Parser, ValueEnum};
 use colored::*;
 
 mod http;
-mod nomatim;
+mod nominatim;
 mod weatherdotgov;
 
-use crate::nomatim::get_lat_lon;
+use crate::nominatim::get_lat_lon;
 use crate::weatherdotgov::{get_detailed_forecast, get_hourly_forecast, get_weather_point};
 
 #[derive(Debug, PartialEq)]
