@@ -1,19 +1,34 @@
-//! Nomatim API
+//! Nominatim (OpenStreetMap) geocoding.
 //!
-//! This module contains the Nomatim API
+//! Turns a `LocationInput` into a latitude/longitude pair so weather.gov can be
+//! asked for a forecast.
 //!
-//! It's meant to accept either a postal code, a city, or a city with a state code
+//! The query is sent as free text via `q`, not as structured `postalcode` /
+//! `city` / `state` parameters:
 //!
-//! It will return a JSON object with the geocoded latitude and longitude for the requested location
+//! ```text
+//! GET /search?q=98101,+USA&format=json&limit=1
+//! GET /search?q=Seattle,+WA,+USA&format=json&limit=1
+//! ```
 //!
-//! If the request is based on a postal code, it will call /search?postalcode={postal_code}&format=json
-//! If the request is based on a city it will call /search?city={city}&format=json
-//! If the request is based on a city and state it will call /search?city={city}&state={state}&format=json
+//! ", USA" is appended to keep results inside the United States, since
+//! weather.gov only covers US locations. Nominatim answers with an array
+//! ordered by relevance; only the first result is used.
 //!
-//! Nomatim returns an array of objects, each of which contains the geocoded latitude and longitude
-//! For now we will only return the first OSM object in the array
+//! Two operational notes:
 //!
-//! Nomatim API docs: https://nominatim.org/release-docs/develop/api/Search/
+//! - The usage policy requires an identifying User-Agent with real contact
+//!   details and permits blocking clients without one. That header comes from
+//!   [`crate::http`], shared with the weather.gov client.
+//! - The policy also caps clients at one request per second. This tool makes a
+//!   single geocoding request per invocation, so it does not rate-limit
+//!   internally; a caller looping over it would need to.
+//!
+//! Errors carry the HTTP status. A blocked or rate-limited request is answered
+//! with an HTML error page rather than JSON, so the status is checked before
+//! parsing — otherwise the failure surfaces as a misleading parse error.
+//!
+//! API docs: <https://nominatim.org/release-docs/develop/api/Search/>
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
