@@ -8,14 +8,23 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.4", features = ["derive"] }
-colored = "2.1"
-reqwest = { version = "0.11.23", features = ["json"] }
-serde = { version = "1.0.196", features = ["derive"] }
-tokio = { version = "1.35.1", features = ["rt-multi-thread", "macros"] }
+colored = "3"
+# `json` and `query` are both opt-in as of 0.13 -- `query` in particular used to
+# be unconditional, and dropping it silently removes `.query()` from the API.
+#
+# Default features are deliberately left on. 0.13 defines `default-tls = rustls`,
+# so the upgrade alone drops the OpenSSL dependency that 0.11's `native-tls`
+# default pulled in; `default-features = false` would buy about three fewer
+# compiled crates in exchange for losing HTTP/2, charset-aware body decoding,
+# and system proxy settings on Windows and macOS. That is a bad trade for a CLI
+# that end users install.
+reqwest = { version = "0.13", features = ["json", "query"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 serde_json = "1.0"
 
 [dev-dependencies]
-mockito = "1.2.0"
+mockito = "1"
 
 # Lints are declared here rather than through RUSTFLAGS in CI, so that a
 # plain `cargo build` reproduces CI's denials locally instead of a
