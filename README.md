@@ -20,7 +20,8 @@ A command-line weather application written in Rust that fetches weather forecast
 
 ## Installation
 
-Make sure you have Rust and Cargo installed. Then:
+Requires Rust 1.88 or newer (see `rust-version` in `Cargo.toml`; CI verifies
+it on every run). Then:
 
 ```bash
 # Clone the repository
@@ -78,6 +79,16 @@ wxdotgov --zip 98101 --forecast-type hourly --limit 0
 - `-h, --help`: Print help
 - `-V, --version`: Print version
 
+### Output Streams
+
+The forecast is written to stdout. Progress lines (`Location found: ...`,
+`Fetching forecast from: ...`) and warnings go to stderr, so redirecting stdout
+gives you just the forecast:
+
+```bash
+wxdotgov --zip 98101 > today.txt   # today.txt holds only the forecast
+```
+
 ## APIs Used
 
 - **Nominatim (OpenStreetMap)**
@@ -104,8 +115,9 @@ The application handles:
 - **Network failures** — every request carries a 10s timeout (5s to connect),
   so an unresponsive upstream fails fast instead of hanging.
 - **Upstream errors** — HTTP status is checked before parsing, and the status
-  code is reported. Nominatim rate limiting (HTTP 429) is called out
-  specifically rather than surfacing as a JSON parse error.
+  code is reported. Error bodies are truncated, so an HTML error page from
+  either service cannot flood the terminal. Nominatim rate limiting (HTTP 429)
+  is called out specifically rather than surfacing as a JSON parse error.
 - **Missing forecast data** — a location without an hourly forecast reports
   that, rather than panicking.
 
@@ -115,7 +127,7 @@ The test suite is fully offline — it mocks both upstream APIs, so it runs
 without network access and never calls the live services.
 
 ```bash
-cargo test                  # 30 tests, no network required
+cargo test                  # 44 tests, no network required
 cargo clippy --all-targets  # warnings are denied
 cargo fmt --all -- --check  # formatting is enforced
 cargo audit                 # RUSTSEC advisories

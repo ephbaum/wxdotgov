@@ -62,9 +62,8 @@ fn parse_zip(zip: &str) -> Result<LocationInput> {
     }
 
     bail!(
-        "'{}' is not a valid US ZIP code. Expected 5 digits (12345) \
-         or ZIP+4 (12345-6789).",
-        zip
+        "'{zip}' is not a valid US ZIP code. Expected 5 digits (12345) \
+         or ZIP+4 (12345-6789)."
     )
 }
 
@@ -144,8 +143,13 @@ async fn main() -> Result<()> {
     let location_input = build_location_input(args.zip, args.city, args.state)?;
 
     // Step 1: Geocode with Nominatim.
+    //
+    // Progress lines go to stderr so stdout carries only the forecast: piping
+    // this to a file previously interleaved a resolved place name and a raw
+    // API URL above the output. The `--state` warning below already used
+    // stderr, so the two streams were being mixed inconsistently.
     let location = get_lat_lon(location_input, None).await?;
-    println!("Location found: {}", location.display_name);
+    eprintln!("Location found: {}", location.display_name);
 
     // Step 2: Get points data from Weather.gov.
     let points_resp = get_weather_point(&location.lat, &location.lon, None).await?;
@@ -160,7 +164,7 @@ async fn main() -> Result<()> {
         ForecastType::Detailed => &points_resp.properties.forecast,
     };
 
-    println!("Fetching forecast from: {}", forecast_url);
+    eprintln!("Fetching forecast from: {forecast_url}");
 
     let style = Style::from_pretty_flag(args.pretty);
     // 0 is the "no limit" spelling; every other value is taken literally.
@@ -177,7 +181,7 @@ async fn main() -> Result<()> {
             render_hourly(&hourly_forecast_resp.properties.periods, style, limit)
         }
     };
-    print!("{}", output);
+    print!("{output}");
 
     Ok(())
 }

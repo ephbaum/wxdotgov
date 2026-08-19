@@ -42,13 +42,11 @@ mod tests {
             "",
         ] {
             let result = parse_zip(bad);
-            assert!(result.is_err(), "expected {:?} to be rejected", bad);
+            assert!(result.is_err(), "expected {bad:?} to be rejected");
             let msg = format!("{}", result.unwrap_err());
             assert!(
                 msg.contains("not a valid US ZIP code"),
-                "unexpected message for {:?}: {}",
-                bad,
-                msg
+                "unexpected message for {bad:?}: {msg}"
             );
         }
     }
@@ -84,6 +82,6 @@ mod tests {
     #[test]
     fn invalid_zip_propagates_through_builder() {
         let err = build_location_input(Some("nope".to_string()), None, None).unwrap_err();
-        assert!(format!("{}", err).contains("not a valid US ZIP code"));
+        assert!(format!("{err}").contains("not a valid US ZIP code"));
     }
 }

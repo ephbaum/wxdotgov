@@ -162,11 +162,10 @@ mod tests {
         // Assert on the message, not just is_err(). This test previously hit
         // the live API, where any network failure satisfied is_err() -- it
         // would have passed with the error handling deleted entirely.
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(
             msg.contains("Weather.gov returned an error for points data"),
-            "unexpected error message: {}",
-            msg
+            "unexpected error message: {msg}"
         );
         mock.assert();
     }
@@ -209,13 +208,12 @@ mod tests {
             .await
             .expect_err("HTTP 429 should be an error");
 
-        let msg = format!("{}", err);
-        assert!(msg.contains("rate-limited"), "unexpected message: {}", msg);
+        let msg = format!("{err}");
+        assert!(msg.contains("rate-limited"), "unexpected message: {msg}");
         // The old code fell through to serde and blamed the parser instead.
         assert!(
             !msg.contains("Error parsing JSON"),
-            "rate limiting should not surface as a parse error: {}",
-            msg
+            "rate limiting should not surface as a parse error: {msg}"
         );
         mock.assert();
     }
@@ -236,13 +234,57 @@ mod tests {
             .await
             .expect_err("HTTP 503 should be an error");
 
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
+        assert!(msg.contains("503"), "status code should be surfaced: {msg}");
+        assert!(!msg.contains("Error parsing JSON"), "got: {msg}");
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_forecast_requests_ask_for_geojson() {
+        // The Accept header used to be sent on /points only, leaving the two
+        // forecast calls relying on GeoJSON being the server default. The mock
+        // matches on the header, so dropping it again fails at mock.assert().
+        let mut server = Server::new_async().await;
+        let mock = server
+            .mock("GET", "/gridpoints/SEW/115,68/forecast")
+            .match_header("accept", "application/geo+json")
+            .with_status(200)
+            .with_header("content-type", "application/geo+json")
+            .with_body(r#"{"properties":{"periods":[]}}"#)
+            .create();
+
+        get_detailed_forecast(&format!("{}/gridpoints/SEW/115,68/forecast", server.url()))
+            .await
+            .expect("forecast request should carry the GeoJSON Accept header");
+
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_weather_gov_error_body_is_bounded() {
+        // Weather.gov error bodies were interpolated whole, so an HTML error
+        // page or proxy interstitial flooded the terminal.
+        let mut server = Server::new_async().await;
+        let huge = "x".repeat(10_000);
+        let mock = server
+            .mock("GET", "/points/47.5619,-122.625")
+            .with_status(500)
+            .with_header("content-type", "text/html")
+            .with_body(format!("<html><body>{huge}</body></html>"))
+            .create();
+
+        let err = get_weather_point("47.5619", "-122.625", Some(&server.url()))
+            .await
+            .expect_err("a 500 should be an error");
+
+        let msg = format!("{err}");
         assert!(
-            msg.contains("503"),
-            "status code should be surfaced: {}",
-            msg
+            msg.len() < 400,
+            "error body should be truncated, got {} chars",
+            msg.len()
         );
-        assert!(!msg.contains("Error parsing JSON"), "got: {}", msg);
+        assert!(msg.contains("500"), "status should be surfaced: {msg}");
         mock.assert();
     }
 

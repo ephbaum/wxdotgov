@@ -36,15 +36,6 @@ use serde::Deserialize;
 use crate::http;
 use crate::LocationInput;
 
-/// Trim an upstream error body so a full HTML page cannot flood the terminal.
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        return s.to_string();
-    }
-    let head: String = s.chars().take(max).collect();
-    format!("{}...", head)
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct NominatimLocation {
     pub lat: String,
@@ -61,13 +52,13 @@ pub async fn get_lat_lon(
     let client = http::client()?;
 
     let query = match input {
-        LocationInput::PostalCode(code) => format!("{}, USA", code),
-        LocationInput::PostalCodePlusFour(code, _) => format!("{}, USA", code),
-        LocationInput::City(city) => format!("{}, USA", city),
-        LocationInput::CityWithState(city, state) => format!("{}, {}, USA", city, state),
+        LocationInput::PostalCode(code) => format!("{code}, USA"),
+        LocationInput::PostalCodePlusFour(code, _) => format!("{code}, USA"),
+        LocationInput::City(city) => format!("{city}, USA"),
+        LocationInput::CityWithState(city, state) => format!("{city}, {state}, USA"),
     };
 
-    let url = format!("{}/search", base_url);
+    let url = format!("{base_url}/search");
 
     let response = client
         .get(&url)
@@ -85,18 +76,17 @@ pub async fn get_lat_lon(
     // as a misleading "Error parsing JSON" and pointed at the wrong cause.
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().await.unwrap_or_default();
+        // Checked before the body is read: the 429 message is self-contained,
+        // and reading a body only to discard it costs a round trip's worth of
+        // waiting on an upstream that has already said no.
         if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
             bail!(
                 "Nominatim rate-limited this request (HTTP 429). \
                  Its usage policy allows at most 1 request per second."
             );
         }
-        bail!(
-            "Nominatim returned an error (HTTP {}): {}",
-            status,
-            truncate(body.trim(), 200)
-        );
+        let body = http::error_body(response).await;
+        bail!("Nominatim returned an error (HTTP {status}): {body}");
     }
 
     let body = response

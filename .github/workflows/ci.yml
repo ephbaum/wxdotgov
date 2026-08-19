@@ -5,6 +5,13 @@ on:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+  # The audit job is the supply-chain gate and there is deliberately no ignore
+  # list, but that guarantee only holds if something runs it. On push/PR alone,
+  # an advisory published during a quiet week goes unnoticed. The weekly run
+  # also exercises the rest of the suite against whatever `stable` has become,
+  # so toolchain drift surfaces on a schedule rather than on a contributor's PR.
+  schedule:
+    - cron: "0 7 * * 1"
 
 env:
   CARGO_TERM_COLOR: always
@@ -69,6 +76,26 @@ jobs:
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+
+  msrv:
+    name: Minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      # Pinned to the `rust-version` declared in Cargo.toml. When a dependency
+      # bump raises the real floor, this job fails and the declared value gets
+      # corrected -- otherwise `rust-version` silently becomes a claim nobody
+      # checks.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.88
+
+      - name: Cache cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check against the declared MSRV
+        run: cargo check --all-targets --locked
 
   audit:
     name: Security audit
