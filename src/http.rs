@@ -72,15 +72,13 @@ mod tests {
         let ua = user_agent();
         assert!(
             ua.starts_with(concat!(env!("CARGO_PKG_NAME"), "/")),
-            "got: {}",
-            ua
+            "got: {ua}"
         );
-        assert!(ua.contains(env!("CARGO_PKG_VERSION")), "got: {}", ua);
-        assert!(ua.contains(CONTACT), "got: {}", ua);
+        assert!(ua.contains(env!("CARGO_PKG_VERSION")), "got: {ua}");
+        assert!(ua.contains(CONTACT), "got: {ua}");
         assert!(
             !ua.contains("example.com"),
-            "placeholder contact in UA: {}",
-            ua
+            "placeholder contact in UA: {ua}"
         );
     }
 

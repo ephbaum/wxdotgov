@@ -162,11 +162,10 @@ mod tests {
         // Assert on the message, not just is_err(). This test previously hit
         // the live API, where any network failure satisfied is_err() -- it
         // would have passed with the error handling deleted entirely.
-        let msg = format!("{}", err);
+        let msg = format!("{err}");
         assert!(
             msg.contains("Weather.gov returned an error for points data"),
-            "unexpected error message: {}",
-            msg
+            "unexpected error message: {msg}"
         );
         mock.assert();
     }
@@ -209,13 +208,12 @@ mod tests {
             .await
             .expect_err("HTTP 429 should be an error");
 
-        let msg = format!("{}", err);
-        assert!(msg.contains("rate-limited"), "unexpected message: {}", msg);
+        let msg = format!("{err}");
+        assert!(msg.contains("rate-limited"), "unexpected message: {msg}");
         // The old code fell through to serde and blamed the parser instead.
         assert!(
             !msg.contains("Error parsing JSON"),
-            "rate limiting should not surface as a parse error: {}",
-            msg
+            "rate limiting should not surface as a parse error: {msg}"
         );
         mock.assert();
     }
@@ -236,13 +234,9 @@ mod tests {
             .await
             .expect_err("HTTP 503 should be an error");
 
-        let msg = format!("{}", err);
-        assert!(
-            msg.contains("503"),
-            "status code should be surfaced: {}",
-            msg
-        );
-        assert!(!msg.contains("Error parsing JSON"), "got: {}", msg);
+        let msg = format!("{err}");
+        assert!(msg.contains("503"), "status code should be surfaced: {msg}");
+        assert!(!msg.contains("Error parsing JSON"), "got: {msg}");
         mock.assert();
     }
 

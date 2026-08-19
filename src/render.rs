@@ -62,14 +62,14 @@ fn limited<T>(periods: &[T], limit: Option<usize>) -> &[T] {
 fn header(text: &str, style: Style) -> String {
     match style {
         Style::Pretty => format!("\n{}\n\n", text.bold().underline().bright_white()),
-        Style::Plain => format!("\n{}\n\n", text),
+        Style::Plain => format!("\n{text}\n\n"),
     }
 }
 
 fn separator(style: Style) -> String {
     match style {
         Style::Pretty => format!("{}\n", SEPARATOR.dimmed()),
-        Style::Plain => format!("{}\n", SEPARATOR),
+        Style::Plain => format!("{SEPARATOR}\n"),
     }
 }
 
@@ -87,7 +87,7 @@ fn truncation_note(total: usize, shown: usize, style: Style) -> String {
     );
     match style {
         Style::Pretty => format!("{}\n", text.dimmed()),
-        Style::Plain => format!("{}\n", text),
+        Style::Plain => format!("{text}\n"),
     }
 }
 

@@ -100,7 +100,7 @@ pub async fn get_weather_point(
     base_url: Option<&str>,
 ) -> Result<PointsResponse> {
     let base_url = base_url.unwrap_or(DEFAULT_BASE_URL);
-    let points_url = format!("{}/points/{},{}", base_url, latitude, longitude);
+    let points_url = format!("{base_url}/points/{latitude},{longitude}");
     let client = http::client()?;
 
     let response = client
@@ -115,10 +115,7 @@ pub async fn get_weather_point(
             .text()
             .await
             .context("Error reading error response")?;
-        bail!(
-            "Weather.gov returned an error for points data: {}",
-            error_text
-        );
+        bail!("Weather.gov returned an error for points data: {error_text}");
     }
 
     let points_resp: PointsResponse = response
@@ -141,7 +138,7 @@ pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastRespons
             .text()
             .await
             .context("Error reading forecast error response")?;
-        bail!("Weather.gov returned an error for forecast: {}", error_text);
+        bail!("Weather.gov returned an error for forecast: {error_text}");
     }
 
     let forecast_resp: ForecastResponse = response
@@ -164,10 +161,7 @@ pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastRes
             .text()
             .await
             .context("Error reading hourly forecast error response")?;
-        bail!(
-            "Weather.gov returned an error for hourly forecast: {}",
-            error_text
-        );
+        bail!("Weather.gov returned an error for hourly forecast: {error_text}");
     }
 
     let hourly_forecast_resp: HourlyForecastResponse = response

@@ -62,9 +62,8 @@ fn parse_zip(zip: &str) -> Result<LocationInput> {
     }
 
     bail!(
-        "'{}' is not a valid US ZIP code. Expected 5 digits (12345) \
-         or ZIP+4 (12345-6789).",
-        zip
+        "'{zip}' is not a valid US ZIP code. Expected 5 digits (12345) \
+         or ZIP+4 (12345-6789)."
     )
 }
 
@@ -160,7 +159,7 @@ async fn main() -> Result<()> {
         ForecastType::Detailed => &points_resp.properties.forecast,
     };
 
-    println!("Fetching forecast from: {}", forecast_url);
+    println!("Fetching forecast from: {forecast_url}");
 
     let style = Style::from_pretty_flag(args.pretty);
     // 0 is the "no limit" spelling; every other value is taken literally.
@@ -177,7 +176,7 @@ async fn main() -> Result<()> {
             render_hourly(&hourly_forecast_resp.properties.periods, style, limit)
         }
     };
-    print!("{}", output);
+    print!("{output}");
 
     Ok(())
 }

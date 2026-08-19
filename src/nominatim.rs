@@ -42,7 +42,7 @@ fn truncate(s: &str, max: usize) -> String {
         return s.to_string();
     }
     let head: String = s.chars().take(max).collect();
-    format!("{}...", head)
+    format!("{head}...")
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -61,13 +61,13 @@ pub async fn get_lat_lon(
     let client = http::client()?;
 
     let query = match input {
-        LocationInput::PostalCode(code) => format!("{}, USA", code),
-        LocationInput::PostalCodePlusFour(code, _) => format!("{}, USA", code),
-        LocationInput::City(city) => format!("{}, USA", city),
-        LocationInput::CityWithState(city, state) => format!("{}, {}, USA", city, state),
+        LocationInput::PostalCode(code) => format!("{code}, USA"),
+        LocationInput::PostalCodePlusFour(code, _) => format!("{code}, USA"),
+        LocationInput::City(city) => format!("{city}, USA"),
+        LocationInput::CityWithState(city, state) => format!("{city}, {state}, USA"),
     };
 
-    let url = format!("{}/search", base_url);
+    let url = format!("{base_url}/search");
 
     let response = client
         .get(&url)

@@ -14,8 +14,8 @@ mod tests {
     fn detailed_periods(count: usize) -> Vec<Period> {
         (0..count)
             .map(|i| Period {
-                name: format!("Period{}", i),
-                detailed_forecast: format!("Forecast text {}", i),
+                name: format!("Period{i}"),
+                detailed_forecast: format!("Forecast text {i}"),
             })
             .collect()
     }
@@ -23,12 +23,12 @@ mod tests {
     fn hourly_periods(count: usize) -> Vec<HourlyPeriod> {
         (0..count)
             .map(|i| HourlyPeriod {
-                start_time: format!("2024-01-28T{:02}:00:00-08:00", i),
+                start_time: format!("2024-01-28T{i:02}:00:00-08:00"),
                 temperature: 50 + i as i32,
                 temperature_unit: "F".to_string(),
-                wind_speed: format!("{} mph", i),
+                wind_speed: format!("{i} mph"),
                 wind_direction: "SSW".to_string(),
-                short_forecast: format!("Short forecast {}", i),
+                short_forecast: format!("Short forecast {i}"),
             })
             .collect()
     }
@@ -45,8 +45,8 @@ mod tests {
 
         for period in &periods {
             for field in [&period.name, &period.detailed_forecast] {
-                assert!(plain.contains(field.as_str()), "plain missing {}", field);
-                assert!(pretty.contains(field.as_str()), "pretty missing {}", field);
+                assert!(plain.contains(field.as_str()), "plain missing {field}");
+                assert!(pretty.contains(field.as_str()), "pretty missing {field}");
             }
         }
     }
@@ -67,8 +67,8 @@ mod tests {
                 period.short_forecast.clone(),
             ];
             for field in fields {
-                assert!(plain.contains(&field), "plain missing {}", field);
-                assert!(pretty.contains(&field), "pretty missing {}", field);
+                assert!(plain.contains(&field), "plain missing {field}");
+                assert!(pretty.contains(&field), "pretty missing {field}");
             }
         }
     }
@@ -78,11 +78,11 @@ mod tests {
         for style in [Style::Plain, Style::Pretty] {
             let detailed = render_detailed(&detailed_periods(3), style, None);
             assert!(detailed.contains("Weather Forecast:"));
-            assert_eq!(separator_count(&detailed), 3, "{:?}", style);
+            assert_eq!(separator_count(&detailed), 3, "{style:?}");
 
             let hourly = render_hourly(&hourly_periods(2), style, None);
             assert!(hourly.contains("Hourly Weather Forecast:"));
-            assert_eq!(separator_count(&hourly), 2, "{:?}", style);
+            assert_eq!(separator_count(&hourly), 2, "{style:?}");
         }
     }
 
