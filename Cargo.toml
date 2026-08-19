@@ -1,6 +1,6 @@
 [package]
 name = "wxdotgov"
-version = "0.9.9"
+version = "0.1.0"
 edition = "2021"
 description = "A command-line weather forecast tool for US locations, backed by the National Weather Service API."
 repository = "https://github.com/ephbaum/wxdotgov"
