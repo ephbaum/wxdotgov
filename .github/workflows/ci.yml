@@ -70,6 +70,26 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+  msrv:
+    name: Minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      # Pinned to the `rust-version` declared in Cargo.toml. When a dependency
+      # bump raises the real floor, this job fails and the declared value gets
+      # corrected -- otherwise `rust-version` silently becomes a claim nobody
+      # checks.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.88
+
+      - name: Cache cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check against the declared MSRV
+        run: cargo check --all-targets --locked
+
   audit:
     name: Security audit
     runs-on: ubuntu-latest

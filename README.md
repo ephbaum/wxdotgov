@@ -20,7 +20,8 @@ A command-line weather application written in Rust that fetches weather forecast
 
 ## Installation
 
-Make sure you have Rust and Cargo installed. Then:
+Requires Rust 1.88 or newer (see `rust-version` in `Cargo.toml`; CI verifies
+it on every run). Then:
 
 ```bash
 # Clone the repository

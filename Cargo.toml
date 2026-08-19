@@ -8,6 +8,11 @@ license = "MIT"
 readme = "README.md"
 keywords = ["weather", "forecast", "cli", "nws", "noaa"]
 categories = ["command-line-utilities"]
+# The floor is set by the `icu_*` crates that `url` -> `reqwest` pulls in, which
+# declare 1.88; clap and reqwest themselves only need 1.85. Verified by the MSRV
+# job in CI rather than by hand, so a dependency bump that raises the floor
+# fails the build instead of silently invalidating this number.
+rust-version = "1.88"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
