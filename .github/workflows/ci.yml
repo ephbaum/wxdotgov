@@ -5,6 +5,13 @@ on:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+  # The audit job is the supply-chain gate and there is deliberately no ignore
+  # list, but that guarantee only holds if something runs it. On push/PR alone,
+  # an advisory published during a quiet week goes unnoticed. The weekly run
+  # also exercises the rest of the suite against whatever `stable` has become,
+  # so toolchain drift surfaces on a schedule rather than on a contributor's PR.
+  schedule:
+    - cron: "0 7 * * 1"
 
 env:
   CARGO_TERM_COLOR: always
