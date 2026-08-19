@@ -241,6 +241,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_forecast_requests_ask_for_geojson() {
+        // The Accept header used to be sent on /points only, leaving the two
+        // forecast calls relying on GeoJSON being the server default. The mock
+        // matches on the header, so dropping it again fails at mock.assert().
+        let mut server = Server::new_async().await;
+        let mock = server
+            .mock("GET", "/gridpoints/SEW/115,68/forecast")
+            .match_header("accept", "application/geo+json")
+            .with_status(200)
+            .with_header("content-type", "application/geo+json")
+            .with_body(r#"{"properties":{"periods":[]}}"#)
+            .create();
+
+        get_detailed_forecast(&format!("{}/gridpoints/SEW/115,68/forecast", server.url()))
+            .await
+            .expect("forecast request should carry the GeoJSON Accept header");
+
+        mock.assert();
+    }
+
+    #[tokio::test]
     async fn test_get_lat_lon_no_results() {
         let mut server = Server::new_async().await;
         let mock_response = r#"[]"#;

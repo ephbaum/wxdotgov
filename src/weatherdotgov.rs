@@ -38,6 +38,7 @@
 //! API docs: <https://www.weather.gov/documentation/services-web-api>
 
 use anyhow::{bail, Context, Result};
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
 use crate::http;
@@ -94,79 +95,57 @@ pub struct HourlyPeriod {
 
 pub const DEFAULT_BASE_URL: &str = "https://api.weather.gov";
 
-pub async fn get_weather_point(
-    latitude: &str,
-    longitude: &str,
-    base_url: Option<&str>,
-) -> Result<PointsResponse> {
-    let base_url = base_url.unwrap_or(DEFAULT_BASE_URL);
-    let points_url = format!("{base_url}/points/{latitude},{longitude}");
+/// GET `url` and deserialize the GeoJSON body into `T`.
+///
+/// The three endpoints below are the same request shape differing only in the
+/// type they decode and the noun they use in errors, so they share one
+/// implementation. `what` names the request in messages ("points data",
+/// "forecast", "hourly forecast").
+async fn get_geojson<T: DeserializeOwned>(url: &str, what: &str) -> Result<T> {
     let client = http::client()?;
 
     let response = client
-        .get(&points_url)
+        .get(url)
+        // GeoJSON is what the API serves by default, but asking for it
+        // explicitly on every request keeps the format from being an
+        // undeclared dependency on that default. This header was previously
+        // sent on /points only.
         .header("Accept", "application/geo+json")
         .send()
         .await
-        .context("Error sending request to Weather.gov points endpoint")?;
+        .with_context(|| format!("Error sending request to Weather.gov for {what}"))?;
 
     if !response.status().is_success() {
         let error_text = response
             .text()
             .await
             .context("Error reading error response")?;
-        bail!("Weather.gov returned an error for points data: {error_text}");
+        bail!("Weather.gov returned an error for {what}: {error_text}");
     }
 
-    let points_resp: PointsResponse = response
+    response
         .json()
         .await
-        .context("Error parsing JSON from Weather.gov points response")?;
-    Ok(points_resp)
+        .with_context(|| format!("Error parsing JSON from Weather.gov {what} response"))
+}
+
+pub async fn get_weather_point(
+    latitude: &str,
+    longitude: &str,
+    base_url: Option<&str>,
+) -> Result<PointsResponse> {
+    let base_url = base_url.unwrap_or(DEFAULT_BASE_URL);
+    get_geojson(
+        &format!("{base_url}/points/{latitude},{longitude}"),
+        "points data",
+    )
+    .await
 }
 
 pub async fn get_detailed_forecast(forecast_url: &str) -> Result<ForecastResponse> {
-    let client = http::client()?;
-    let response = client
-        .get(forecast_url)
-        .send()
-        .await
-        .context("Error sending request to Weather.gov forecast endpoint")?;
-
-    if !response.status().is_success() {
-        let error_text = response
-            .text()
-            .await
-            .context("Error reading forecast error response")?;
-        bail!("Weather.gov returned an error for forecast: {error_text}");
-    }
-
-    let forecast_resp: ForecastResponse = response
-        .json()
-        .await
-        .context("Error parsing JSON from Weather.gov forecast response")?;
-    Ok(forecast_resp)
+    get_geojson(forecast_url, "forecast").await
 }
 
 pub async fn get_hourly_forecast(forecast_url: &str) -> Result<HourlyForecastResponse> {
-    let client = http::client()?;
-    let response = client
-        .get(forecast_url)
-        .send()
-        .await
-        .context("Error sending request to Weather.gov hourly forecast endpoint")?;
-
-    if !response.status().is_success() {
-        let error_text = response
-            .text()
-            .await
-            .context("Error reading hourly forecast error response")?;
-        bail!("Weather.gov returned an error for hourly forecast: {error_text}");
-    }
-
-    let hourly_forecast_resp: HourlyForecastResponse = response
-        .json()
-        .await
-        .context("Error parsing JSON from Weather.gov hourly forecast response")?;
-    Ok(hourly_forecast_resp)
+    get_geojson(forecast_url, "hourly forecast").await
 }
