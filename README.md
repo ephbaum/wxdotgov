@@ -79,6 +79,16 @@ wxdotgov --zip 98101 --forecast-type hourly --limit 0
 - `-h, --help`: Print help
 - `-V, --version`: Print version
 
+### Output Streams
+
+The forecast is written to stdout. Progress lines (`Location found: ...`,
+`Fetching forecast from: ...`) and warnings go to stderr, so redirecting stdout
+gives you just the forecast:
+
+```bash
+wxdotgov --zip 98101 > today.txt   # today.txt holds only the forecast
+```
+
 ## APIs Used
 
 - **Nominatim (OpenStreetMap)**
