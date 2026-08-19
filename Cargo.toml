@@ -2,6 +2,12 @@
 name = "wxdotgov"
 version = "0.9.9"
 edition = "2021"
+description = "A command-line weather forecast tool for US locations, backed by the National Weather Service API."
+repository = "https://github.com/ephbaum/wxdotgov"
+license = "MIT"
+readme = "README.md"
+keywords = ["weather", "forecast", "cli", "nws", "noaa"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
