@@ -127,7 +127,7 @@ The test suite is fully offline — it mocks both upstream APIs, so it runs
 without network access and never calls the live services.
 
 ```bash
-cargo test                  # 30 tests, no network required
+cargo test                  # 44 tests, no network required
 cargo clippy --all-targets  # warnings are denied
 cargo fmt --all -- --check  # formatting is enforced
 cargo audit                 # RUSTSEC advisories
