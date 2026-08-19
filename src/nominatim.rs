@@ -36,15 +36,6 @@ use serde::Deserialize;
 use crate::http;
 use crate::LocationInput;
 
-/// Trim an upstream error body so a full HTML page cannot flood the terminal.
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        return s.to_string();
-    }
-    let head: String = s.chars().take(max).collect();
-    format!("{head}...")
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct NominatimLocation {
     pub lat: String,
@@ -85,18 +76,17 @@ pub async fn get_lat_lon(
     // as a misleading "Error parsing JSON" and pointed at the wrong cause.
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().await.unwrap_or_default();
+        // Checked before the body is read: the 429 message is self-contained,
+        // and reading a body only to discard it costs a round trip's worth of
+        // waiting on an upstream that has already said no.
         if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
             bail!(
                 "Nominatim rate-limited this request (HTTP 429). \
                  Its usage policy allows at most 1 request per second."
             );
         }
-        bail!(
-            "Nominatim returned an error (HTTP {}): {}",
-            status,
-            truncate(body.trim(), 200)
-        );
+        let body = http::error_body(response).await;
+        bail!("Nominatim returned an error (HTTP {status}): {body}");
     }
 
     let body = response

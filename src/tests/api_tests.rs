@@ -262,6 +262,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_weather_gov_error_body_is_bounded() {
+        // Weather.gov error bodies were interpolated whole, so an HTML error
+        // page or proxy interstitial flooded the terminal.
+        let mut server = Server::new_async().await;
+        let huge = "x".repeat(10_000);
+        let mock = server
+            .mock("GET", "/points/47.5619,-122.625")
+            .with_status(500)
+            .with_header("content-type", "text/html")
+            .with_body(format!("<html><body>{huge}</body></html>"))
+            .create();
+
+        let err = get_weather_point("47.5619", "-122.625", Some(&server.url()))
+            .await
+            .expect_err("a 500 should be an error");
+
+        let msg = format!("{err}");
+        assert!(
+            msg.len() < 400,
+            "error body should be truncated, got {} chars",
+            msg.len()
+        );
+        assert!(msg.contains("500"), "status should be surfaced: {msg}");
+        mock.assert();
+    }
+
+    #[tokio::test]
     async fn test_get_lat_lon_no_results() {
         let mut server = Server::new_async().await;
         let mock_response = r#"[]"#;

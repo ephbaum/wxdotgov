@@ -61,6 +61,31 @@ pub fn client() -> Result<&'static reqwest::Client> {
     Ok(CLIENT.get_or_init(|| client))
 }
 
+/// Read an error response body for use in a message, bounded so a full HTML
+/// page cannot flood the terminal.
+///
+/// Both upstream services answer some failures with HTML rather than JSON --
+/// Nominatim does it for blocked and rate-limited requests -- so an unbounded
+/// interpolation of the body into an error is a page of markup in the user's
+/// scrollback. Reading the body is itself fallible, and a failure there is not
+/// worth surfacing in place of the status that actually caused the error, so
+/// this reports the absence instead of propagating.
+pub async fn error_body(response: reqwest::Response) -> String {
+    const MAX: usize = 200;
+
+    let body = response.text().await.unwrap_or_default();
+    let body = body.trim();
+
+    if body.is_empty() {
+        return "<no response body>".to_string();
+    }
+    if body.chars().count() <= MAX {
+        return body.to_string();
+    }
+    let head: String = body.chars().take(MAX).collect();
+    format!("{head}...")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -115,12 +115,12 @@ async fn get_geojson<T: DeserializeOwned>(url: &str, what: &str) -> Result<T> {
         .await
         .with_context(|| format!("Error sending request to Weather.gov for {what}"))?;
 
-    if !response.status().is_success() {
-        let error_text = response
-            .text()
-            .await
-            .context("Error reading error response")?;
-        bail!("Weather.gov returned an error for {what}: {error_text}");
+    let status = response.status();
+    if !status.is_success() {
+        // Bounded by `error_body`: an error page or proxy interstitial from
+        // upstream used to be interpolated whole into this message.
+        let body = http::error_body(response).await;
+        bail!("Weather.gov returned an error for {what} (HTTP {status}): {body}");
     }
 
     response

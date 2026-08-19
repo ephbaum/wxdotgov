@@ -115,8 +115,9 @@ The application handles:
 - **Network failures** — every request carries a 10s timeout (5s to connect),
   so an unresponsive upstream fails fast instead of hanging.
 - **Upstream errors** — HTTP status is checked before parsing, and the status
-  code is reported. Nominatim rate limiting (HTTP 429) is called out
-  specifically rather than surfacing as a JSON parse error.
+  code is reported. Error bodies are truncated, so an HTML error page from
+  either service cannot flood the terminal. Nominatim rate limiting (HTTP 429)
+  is called out specifically rather than surfacing as a JSON parse error.
 - **Missing forecast data** — a location without an hourly forecast reports
   that, rather than panicking.
 
