@@ -89,7 +89,7 @@ jobs:
       # corrected -- otherwise `rust-version` silently becomes a claim nobody
       # checks.
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@1.88
+        uses: dtolnay/rust-toolchain@1.100
 
       - name: Cache cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
